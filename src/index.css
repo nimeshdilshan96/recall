@@ -1,0 +1,127 @@
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+body {
+  /* Latin glyphs use the primary face; CJK (Japanese decks, etc.) falls through to Noto Sans JP. */
+  --font-ui: 'Hanken Grotesk', 'Noto Sans JP', system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque', 'Noto Sans JP', sans-serif;
+  /* "mono" slots (counts, intervals, XP) now use the sans UI face instead of a monospace font. */
+  --font-mono: 'Hanken Grotesk', 'Noto Sans JP', system-ui, sans-serif;
+  font-family: var(--font-ui);
+  background: oklch(0.93 0 0);
+  color: #4b4b4b;
+  -webkit-font-smoothing: antialiased;
+}
+textarea,
+input,
+button {
+  font-family: inherit;
+}
+textarea:focus,
+input:focus {
+  outline: none;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.8 0 0);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+@keyframes rvReveal {
+  from { transform: translateY(8px); }
+  to { transform: translateY(0); }
+}
+@keyframes rvPop {
+  0% { transform: scale(0.6); opacity: 0; }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes rvToast {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes rvFloat {
+  from { transform: translateY(10px); opacity: 0.6; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Duolingo-style press: hard bottom shadow that compresses on click. */
+.btn3d {
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: var(--accent);
+  box-shadow: 0 4px 0 var(--accent-deep);
+  transition: transform 0.04s, box-shadow 0.04s, filter 0.12s;
+}
+.btn3d:hover {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 var(--accent-deep);
+  filter: brightness(1.05);
+}
+.btn3d:active {
+  transform: translateY(4px);
+  box-shadow: 0 0 0 var(--accent-deep);
+}
+.btn3d:disabled {
+  cursor: not-allowed;
+  filter: none;
+  transform: none;
+}
+
+/* Plain red "Delete" text link (card rows, deck rows). Non-bold, underline on hover. */
+.link-delete {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #ff4b4b;
+  font-weight: 500;
+  font-size: 13px;
+  padding: 0;
+}
+.link-delete:hover {
+  text-decoration: underline;
+}
+
+/* Deck row: NEW/DUE + Study sit flush right. On hover they slide left and the
+   Delete link (absolutely positioned, so it costs no space) slides in on the right. */
+.deck-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  transition: transform 0.18s ease;
+}
+.deck-delete {
+  position: absolute;
+  right: 22px;
+  top: 50%;
+  transform: translateY(-50%) translateX(10px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+.deck-row:hover .deck-actions,
+.deck-row:focus-within .deck-actions {
+  transform: translateX(-64px);
+}
+.deck-row:hover .deck-delete,
+.deck-row:focus-within .deck-delete {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+  pointer-events: auto;
+}

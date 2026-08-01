@@ -1,0 +1,10 @@
+# Litestream: streams the SQLite database to S3 for backup + point-in-time restore.
+# Restore on a new machine before starting the app:
+#   litestream restore -o /app/data/recall.db s3://$LITESTREAM_BUCKET/recall.db
+dbs:
+  - path: /app/data/recall.db
+    replicas:
+      - type: s3
+        bucket: ${LITESTREAM_BUCKET}
+        path: recall.db
+        # region: eu-west-1   # set for your bucket

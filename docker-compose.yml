@@ -1,0 +1,36 @@
+# Runs the same on a Raspberry Pi and on an AWS instance (EC2/Lightsail).
+#   docker compose up -d --build
+#
+# `recall` serves the SPA + API. `litestream` continuously replicates the SQLite
+# file to S3 for backup + point-in-time restore (omit it for a Pi with local-only backup).
+
+services:
+  recall:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    environment:
+      # CHANGE THIS — signs the auth cookie.
+      RECALL_SECRET: ${RECALL_SECRET:?set RECALL_SECRET in .env}
+      RECALL_DB: /app/data/recall.db
+    volumes:
+      - recall-data:/app/data
+
+  # Optional: continuous S3 backup. Configure via .env (see .env.example).
+  litestream:
+    image: litestream/litestream:latest
+    restart: unless-stopped
+    depends_on:
+      - recall
+    command: replicate
+    environment:
+      LITESTREAM_ACCESS_KEY_ID: ${LITESTREAM_ACCESS_KEY_ID:-}
+      LITESTREAM_SECRET_ACCESS_KEY: ${LITESTREAM_SECRET_ACCESS_KEY:-}
+      LITESTREAM_BUCKET: ${LITESTREAM_BUCKET:-}
+    volumes:
+      - recall-data:/app/data
+      - ./litestream.yml:/etc/litestream.yml:ro
+
+volumes:
+  recall-data:
