@@ -26,7 +26,8 @@ Open http://localhost:5173. The `data/recall.db` file is a normal SQLite DB you 
   (ALL SQL + FSRS writes — the single persistence seam)**, `auth.ts` (scrypt hashing + signed
   cookie), `index.ts` (routes; serves the built SPA in production).
 - Grades run FSRS **server-side** and persist the updated `cards` row + a `review_log` entry in
-  one transaction. Stats are computed from real data — no fabricated numbers.
+  one transaction. Stats are computed from real data — no fabricated numbers (two known
+  exceptions: see "Known bugs / fake data" below).
 
 ## Data model notes
 
@@ -51,6 +52,26 @@ Three rolling **7-day** gauges on the Stats screen, computed in `repo.ts:getRete
 - **Streak** (`selectors.ts:streakFrom`): consecutive days with >0 reviews ending today; a day
   with no reviews *yet* doesn't reset it (Duolingo-style — holds at yesterday's value, +1s once
   you review, resets only after a full missed day).
+
+## Known bugs / fake data (found 2026-08-03, unfixed)
+
+Two places violate the "no fabricated numbers" principle above:
+- **Hardcoded "True retention" table** — `src/screens/Stats.tsx` (~line 203): the Past
+  week/month/year rows are literal constants (286/24, 1190/118, 9320/1040 → 92/91/90%), marked
+  "illustrative" in a comment. Only the "Today" row is real (current session). Every user sees
+  the same numbers regardless of their data. Don't confuse it with the *real* API-backed
+  "True retention (7 days)" gauge on the same screen. Fix options: extend `/api/retention` to
+  take a `days` window (`repo.ts:getRetention` already accepts one) and wire the table up, or
+  drop the fake rows.
+- **New-user seeding fabricates review history** — `repo.ts:createUser` seeds four demo decks
+  (`src/data/seed.ts`) whose cards get *backdated* `created_at`/`last_review` values **plus
+  backdated `review_log` rows**, so a brand-new account shows weeks of fake calendar activity
+  and non-zero stats. Cleanup for an existing account: `DELETE /api/decks/:id` on the demo
+  decks — FK cascades (deck → cards → review_log) wipe the fake logs too.
+
+API quirk: Fastify rejects bodyless requests (e.g. DELETE) that send
+`Content-Type: application/json` — `FST_ERR_CTP_EMPTY_JSON_BODY`. Omit the header when there's
+no body.
 
 ## Deploy (full guide in DEPLOY.md)
 
