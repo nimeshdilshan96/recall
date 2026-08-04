@@ -1,7 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { db } from './db.ts';
 import { RecallScheduler, Rating, type Card } from '../src/fsrs/recall-scheduler.ts';
-import { seedDecks } from '../src/data/seed.ts';
 import { hashPassword } from './auth.ts';
 
 const scheduler = new RecallScheduler(); // FSRS-6 defaults; authoritative server-side scheduler.
@@ -103,41 +102,11 @@ export function updateSettings(userId: string, opts: { newLimit?: number; studyD
   return getUser(userId);
 }
 
-/** Create a user and seed their starter decks (the four demo decks) in one transaction. */
+/** Create an empty user account in one transaction. */
 export const createUser = db.transaction((username: string, password: string): PublicUser => {
   const id = randomUUID();
   const now = Date.now();
   db.prepare('INSERT INTO users (id, username, password_hash, xp, gems, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(id, username, hashPassword(password), 0, 500, now);
-
-  const insertDeck = db.prepare('INSERT INTO decks (id, user_id, name, color, pos) VALUES (?, ?, ?, ?, ?)');
-  const insertCard = db.prepare(
-    'INSERT INTO cards (id, deck_id, front, back, created_at, stability, difficulty, state, step, due, last_review) VALUES (@id, @deck_id, @front, @back, @created_at, @stability, @difficulty, @state, @step, @due, @last_review)',
-  );
-  const insertLog = db.prepare('INSERT INTO review_log (card_id, user_id, rating, reviewed_at) VALUES (?, ?, ?, ?)');
-
-  seedDecks(now).forEach((deck, pos) => {
-    const deckId = randomUUID();
-    insertDeck.run(deckId, id, deck.name, deck.color, pos);
-    for (const c of deck.cards) {
-      const cardId = randomUUID();
-      insertCard.run({
-        id: cardId,
-        deck_id: deckId,
-        front: c.front,
-        back: c.back,
-        created_at: c.createdAt.getTime(),
-        stability: c.fsrs.stability,
-        difficulty: c.fsrs.difficulty,
-        state: c.fsrs.state,
-        step: c.fsrs.step,
-        due: c.fsrs.due.getTime(),
-        last_review: c.fsrs.lastReview ? c.fsrs.lastReview.getTime() : null,
-      });
-      // Backfill a past review-log entry so seeded "reviewed" cards have real history
-      // (otherwise their first *logged* review would be today, mis-counting them as new).
-      if (c.fsrs.lastReview) insertLog.run(cardId, id, 3, c.fsrs.lastReview.getTime());
-    }
-  });
 
   return { id, username, xp: 0, gems: 500, newLimit: 20, studyDirection: 'front' };
 });

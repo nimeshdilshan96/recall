@@ -3,7 +3,7 @@ import { RecallScheduler, Rating, State } from './fsrs/recall-scheduler.ts';
 import type { Deck, RecallCard, CardType } from './data/types.ts';
 import { parseCloze } from './util/answer.ts';
 import { pickAccent } from './theme.ts';
-import { api, type StudyDirection, type PublicUser, type HardestCard } from './api.ts';
+import { api, type StudyDirection, type PublicUser, type HardestCard, type Retention } from './api.ts';
 
 export type { StudyDirection };
 export type Screen = 'home' | 'study' | 'add' | 'league' | 'stats' | 'browse' | 'settings';
@@ -36,7 +36,8 @@ export interface AppState {
   decks: Deck[];
   history: number[];
   today: { reviewDone: number; newDone: number };
-  retention: { recalled: number; total: number; trueRecalled: number; trueTotal: number; matureRecalled: number; matureTotal: number };
+  retention: Retention;
+  retentionWindows: Record<1 | 7 | 30 | 365, Retention>;
   leaderboard: { username: string; xp: number }[];
 
   studyDeckId: string | null;
@@ -161,6 +162,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     history: [],
     today: { reviewDone: 0, newDone: 0 },
     retention: { recalled: 0, total: 0, trueRecalled: 0, trueTotal: 0, matureRecalled: 0, matureTotal: 0 },
+    retentionWindows: {
+      1: { recalled: 0, total: 0, trueRecalled: 0, trueTotal: 0, matureRecalled: 0, matureTotal: 0 },
+      7: { recalled: 0, total: 0, trueRecalled: 0, trueTotal: 0, matureRecalled: 0, matureTotal: 0 },
+      30: { recalled: 0, total: 0, trueRecalled: 0, trueTotal: 0, matureRecalled: 0, matureTotal: 0 },
+      365: { recalled: 0, total: 0, trueRecalled: 0, trueTotal: 0, matureRecalled: 0, matureTotal: 0 },
+    },
     leaderboard: [],
     studyDeckId: null,
     studyLabel: '',
@@ -467,9 +474,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
           .history()
           .then((h) => patch({ history: h.reviews }))
           .catch(() => {});
-        api
-          .retention()
-          .then((retention) => patch({ retention }))
+        Promise.all([1, 7, 30, 365].map((days) => api.retention(days)))
+          .then(([today, week, month, year]) => patch({
+            retention: week,
+            retentionWindows: { 1: today, 7: week, 30: month, 365: year },
+          }))
           .catch(() => {});
       },
       loadLeaderboard: () => {

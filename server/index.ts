@@ -159,7 +159,12 @@ app.get('/api/today', async (req, reply) => {
 app.get('/api/retention', async (req, reply) => {
   const id = requireUser(req, reply);
   if (!id) return;
-  return repo.getRetention(id, 7);
+  const { days: rawDays } = (req.query ?? {}) as { days?: string };
+  const days = rawDays === undefined ? 7 : Number(rawDays);
+  if (!Number.isInteger(days) || ![1, 7, 30, 365].includes(days)) {
+    return reply.code(400).send({ error: 'days must be one of 1, 7, 30, or 365' });
+  }
+  return repo.getRetention(id, days);
 });
 
 app.get('/api/hardest', async (req, reply) => {

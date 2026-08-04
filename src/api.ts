@@ -40,6 +40,15 @@ export interface PublicUser {
   studyDirection: StudyDirection;
 }
 
+export interface Retention {
+  recalled: number;
+  total: number;
+  trueRecalled: number;
+  trueTotal: number;
+  matureRecalled: number;
+  matureTotal: number;
+}
+
 function reviveCard(w: WireCard): RecallCard {
   const fsrs: Card = {
     stability: w.fsrs.stability,
@@ -89,8 +98,7 @@ export const api = {
   deleteDeck: (deckId: string) => req<{ ok: true }>('DELETE', `/api/decks/${deckId}`),
 
   today: () => req<{ reviewDone: number; newDone: number }>('GET', '/api/today'),
-  retention: () =>
-    req<{ recalled: number; total: number; trueRecalled: number; trueTotal: number; matureRecalled: number; matureTotal: number }>('GET', '/api/retention'),
+  retention: (days = 7) => req<Retention>('GET', `/api/retention?days=${days}`),
   hardest: async (): Promise<HardestCard[]> => (await req<{ cards: HardestCard[] }>('GET', '/api/hardest')).cards,
   history: () => req<{ reviews: number[]; added: number[] }>('GET', '/api/history'),
   leaderboard: async (): Promise<{ username: string; xp: number }[]> => (await req<{ rows: { username: string; xp: number }[] }>('GET', '/api/leaderboard')).rows,

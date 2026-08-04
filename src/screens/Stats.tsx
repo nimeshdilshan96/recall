@@ -97,8 +97,8 @@ export function Stats() {
   // --- Today ---
   const studied = state.history[state.history.length - 1] + state.session.reviewed;
   const minutes = Math.round(studied * 0.16 * 10) / 10;
-  const againPct = state.session.total > 0 ? Math.round((state.session.again / state.session.total) * 100) : 6;
-  const correctPct = 100 - againPct;
+  const againPct = state.session.total > 0 ? Math.round((state.session.again / state.session.total) * 100) : null;
+  const correctPct = againPct === null ? null : 100 - againPct;
 
   // --- Retention gauges (rolling 7 days, from the review log) ---
   const ret = state.retention;
@@ -200,13 +200,17 @@ export function Stats() {
     }
   const addedMax = Math.max(1, ...added);
 
-  // --- True retention (Today from session; other periods illustrative) ---
+  // --- True retention (real review-log windows, excluding first-ever exposures) ---
   const retention = [
-    { period: 'Today', pass: Math.max(0, state.session.total - state.session.again), fail: state.session.again },
-    { period: 'Past week', pass: 286, fail: 24 },
-    { period: 'Past month', pass: 1190, fail: 118 },
-    { period: 'Past year', pass: 9320, fail: 1040 },
-  ].map((r) => ({ ...r, pct: Math.round((r.pass / Math.max(1, r.pass + r.fail)) * 100) + '%' }));
+    { period: 'Today', data: state.retentionWindows[1] },
+    { period: 'Past week', data: state.retentionWindows[7] },
+    { period: 'Past month', data: state.retentionWindows[30] },
+    { period: 'Past year', data: state.retentionWindows[365] },
+  ].map(({ period, data }) => {
+    const pass = data.trueRecalled;
+    const fail = data.trueTotal - pass;
+    return { period, pass, fail, pct: data.trueTotal ? `${Math.round((pass / data.trueTotal) * 100)}%` : '—' };
+  });
 
   const label = (i: number, len: number) => (i % 5 === 0 ? `${len - i}d` : '');
 
@@ -257,8 +261,8 @@ export function Stats() {
           {[
             { v: String(studied), l: 'cards studied', c: 'var(--accent)' },
             { v: String(minutes), l: 'minutes', c: '#4b4b4b' },
-            { v: correctPct + '%', l: 'correct', c: 'oklch(0.62 0.12 150)' },
-            { v: againPct + '%', l: 'again', c: '#ff4b4b' },
+            { v: correctPct === null ? '—' : correctPct + '%', l: 'correct', c: 'oklch(0.62 0.12 150)' },
+            { v: againPct === null ? '—' : againPct + '%', l: 'again', c: '#ff4b4b' },
             { v: String(streak), l: 'day streak', c: '#ff9600' },
           ].map((s) => (
             <div key={s.l}>
