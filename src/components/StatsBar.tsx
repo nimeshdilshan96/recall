@@ -1,6 +1,6 @@
 import { useApp } from '../store.tsx';
 import { streakFrom } from '../selectors.ts';
-import { LogoutIcon } from './icons.tsx';
+import { FlameIcon, GemIcon, LogoutIcon } from './icons.tsx';
 import { useIsMobile } from '../hooks/useIsMobile.ts';
 
 export function StatsBar() {
@@ -13,12 +13,12 @@ export function StatsBar() {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 14 : 22, padding: '16px var(--pad)', borderBottom: '1px solid oklch(0.9 0 0)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={chip('#ff9600', '#e08600')} />
+      <div className="icon-stat" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <FlameIcon width={17} height={20} />
         <span style={{ fontWeight: 800, fontSize: 15, color: '#ff9600' }}>{streak}</span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={chip('#1cb0f6', '#1899d6')} />
+      <div className="icon-stat" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <GemIcon width={19} height={17} />
         <span style={{ fontWeight: 800, fontSize: 15, color: '#1899d6' }}>{state.gems}</span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>

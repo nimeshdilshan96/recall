@@ -119,6 +119,55 @@ input:focus {
   to { opacity: 1; margin-top: 0; }
 }
 
+/* Study screen breathing room. When the viewport is short (mobile keyboard open), the
+   spacing compresses so the card + Show answer fit without scrolling. Fonts unchanged. */
+:root {
+  --study-area-pad: 18px;  /* scroll area vertical padding */
+  --study-card-pad: 44px;  /* card vertical padding (unrevealed) */
+  --study-input-gap: 26px; /* gap above the type-answer input */
+}
+@media (max-height: 580px) {
+  :root {
+    --study-area-pad: 8px;
+    --study-card-pad: 18px;
+    --study-input-gap: 12px;
+  }
+}
+
+/* Streak flame + gem icons (icons.tsx): hover glow/flicker and facet cycling.
+   Two stacked drop-shadows = tight bright glow + wide soft one (a single shadow reads as blur).
+   The gem doesn't rotate — its two crown facets swap fills in counter-phase (negative delay). */
+@keyframes flicker {
+  0%, 100% { transform: scale(1); }
+  30%      { transform: scale(1.13) rotate(-2deg); }
+  65%      { transform: scale(1.06) rotate(1.5deg); }
+}
+.flame {
+  transition: filter 0.25s ease, transform 0.25s ease;
+  transform-origin: 50% 85%; /* pivot at the base, so it licks upward */
+  overflow: visible;
+}
+/* Hover on the icon OR anywhere in its .icon-stat group (icon + number) triggers the effect. */
+.flame:hover,
+.icon-stat:hover .flame {
+  animation: flicker 0.9s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px rgba(255, 150, 0, 0.75)) drop-shadow(0 0 14px rgba(255, 200, 0, 0.45));
+}
+@keyframes gem-facet {
+  0%, 100% { fill: #8ddcff; }
+  50%      { fill: #1899d6; }
+}
+.gem { transition: filter 0.3s ease; }
+.gem:hover,
+.icon-stat:hover .gem { filter: drop-shadow(0 0 6px rgba(28, 176, 246, 0.7)); }
+.gem:hover .gem-facet,
+.icon-stat:hover .gem-facet { animation: gem-facet 1.6s linear infinite; }
+.gem:hover .gem-facet-2,
+.icon-stat:hover .gem-facet-2 { animation-delay: -0.8s; } /* counter-phase */
+@media (prefers-reduced-motion: reduce) {
+  .flame, .gem-facet { animation: none !important; }
+}
+
 /* Line-chart hover: each invisible day column reveals its guide line + point marker. */
 .chart-col .chart-marker {
   opacity: 0;

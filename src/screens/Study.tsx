@@ -117,9 +117,9 @@ export function Study() {
         </div>
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '18px var(--pad)', minHeight: 0, overflowY: 'auto' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 'var(--study-area-pad) var(--pad)', minHeight: 0, overflowY: 'auto' }}>
         <div style={{ width: '100%', maxWidth: 560, margin: 'auto 0', flexShrink: 0, background: 'oklch(0.995 0 0)', border: '1px solid oklch(0.9 0 0)', borderRadius: 22, boxShadow: '0 18px 44px -28px oklch(0.3 0 0 / 0.5)', overflow: 'hidden' }}>
-          <div style={{ padding: `${state.revealed ? 20 : 44}px 36px ${state.revealed ? 14 : 44}px`, textAlign: 'center' }}>
+          <div style={{ padding: state.revealed ? '20px 36px 14px' : 'var(--study-card-pad) 36px', textAlign: 'center' }}>
             <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.12em', color: 'var(--accent)', textTransform: 'uppercase' }}>{tag}</div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: isCloze ? (state.revealed ? 30 : 32) : state.revealed ? 28 : 42, fontWeight: 500, color: '#4b4b4b', marginTop: 12, lineHeight: 1.3, transition: 'font-size 0.2s' }}>{promptNode}</div>
             {!state.revealed && TYPE_ANSWERS && (
@@ -134,7 +134,7 @@ export function Study() {
                   }
                 }}
                 placeholder={isCloze ? 'Type the missing word, then press Enter' : 'Type your answer, then press Enter'}
-                style={{ width: '100%', maxWidth: 360, textAlign: 'center', marginTop: 26, border: 'none', borderBottom: '2px solid oklch(0.86 0.025 72)', background: 'transparent', fontFamily: 'var(--font-display)', fontSize: 24, padding: '8px 4px', color: '#4b4b4b' }}
+                style={{ width: '100%', maxWidth: 360, textAlign: 'center', marginTop: 'var(--study-input-gap)', border: 'none', borderBottom: '2px solid oklch(0.86 0.025 72)', background: 'transparent', fontFamily: 'var(--font-display)', fontSize: 24, padding: '8px 4px', color: '#4b4b4b' }}
                 onFocus={(e) => (e.currentTarget.style.borderBottomColor = 'var(--accent)')}
                 onBlur={(e) => (e.currentTarget.style.borderBottomColor = 'oklch(0.86 0.025 72)')}
               />
@@ -167,7 +167,7 @@ export function Study() {
         </div>
       </div>
 
-      <div style={{ padding: '0 var(--pad) 26px' }}>
+      <div style={{ padding: '14px var(--pad) 26px' }}>
         {state.practice && (
           <div style={{ textAlign: 'center', fontSize: 12, color: '#afafaf', marginBottom: 12 }}>Practice session — grades won't change your review schedule</div>
         )}

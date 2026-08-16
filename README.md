@@ -192,5 +192,20 @@ The app is on port `8787` (serves SPA + API). The SQLite file lives in the `reca
   tab bar, 16px content padding, and hides the profile name in the top bar — matching the design's
   two layouts. The prototype's device frame + Desktop/Mobile toggle (scaffolding) are omitted; the
   app fills the viewport and picks the layout from the viewport width instead.
+- Deck rows on mobile stack into three lines (name + count / padlock + NEW·DUE + Delete /
+  full-width buttons) via `useIsMobile`; on desktop Delete stays hover-revealed, on mobile it's an
+  inline link (hover doesn't exist on touch).
+- On short viewports (≤ 580px high — i.e. the mobile keyboard is open) the Study screen's spacing
+  compresses via the `--study-*` CSS variables in `index.css`, so the card and Show-answer button
+  fit without scrolling. Fonts are unchanged; only paddings shrink.
+- **Site icons** (`public/`): `favicon.svg` is the browser-tab icon; `apple-touch-icon.png`
+  (180×180) is what iOS home-screen shortcuts use — iOS **ignores favicons**, requires a PNG with
+  a **solid background** (transparent pixels are composited onto black), and caches the icon per
+  shortcut (delete + re-add the shortcut to refresh it). To regenerate: render the artwork in a
+  browser at 180×180 over a solid background and screenshot it.
+- The streak **flame** and **gem** icons (`icons.tsx`) animate on hover via CSS in `index.css`:
+  wrap an icon + its number in `class="icon-stat"` so hovering either triggers the effect; the
+  gem's animating facets are the paths carrying `class="gem-facet"`. Both respect
+  `prefers-reduced-motion`.
 - Auth is username + password for a trusted family circle. For a public deployment add HTTPS
   (reverse proxy), rate limiting, and email/verification.

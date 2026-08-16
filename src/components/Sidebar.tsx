@@ -77,8 +77,8 @@ export function Sidebar() {
 
       <div style={{ marginTop: 'auto', padding: 14, borderRadius: 14, background: 'oklch(0.97 0 0)', border: '1px solid oklch(0.9 0 0)' }}>
         <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#afafaf' }}>Current streak</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-          <FlameIcon />
+        <div className="icon-stat" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+          <FlameIcon width={29} height={35} withStroke />
           <span style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600, color: '#4b4b4b' }}>{streak}</span>
           <span style={{ fontSize: 13, color: '#777777' }}>days</span>
         </div>

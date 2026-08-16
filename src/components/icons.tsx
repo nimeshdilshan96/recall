@@ -45,21 +45,35 @@ export function NavIcon({ name, color, size }: { name: NavKey; color: string; si
   );
 }
 
-export function FlameIcon() {
+/** Streak flame. Hover flickers + glows via `.flame` (index.css). `withStroke` separates it
+ *  from busy backgrounds (sidebar card) — too heavy below ~20px, so off by default. */
+export function FlameIcon({ width = 23, height = 28, withStroke = false }: { width?: number; height?: number; withStroke?: boolean }) {
   return (
-    <svg width="29" height="35" viewBox="0 0 25 30" aria-hidden style={{ flexShrink: 0 }}>
-      <g transform="translate(1,1)" fillRule="nonzero">
-        <path
-          d="M0.068,15.675 L0.044,7.216 C0.039,5.334 1.25,3.942 3.056,4.246 C3.413,4.306 3.998,4.491 4.306,4.656 L5.997,5.561 L9.247,1.464 C9.79255754,0.776391272 10.6222536,0.37555895 11.5,0.37555895 C12.3777464,0.37555895 13.2074425,0.776391272 13.753,1.464 L20.523,10 C22.1231469,11.939276 22.9988566,14.3747884 23,16.889 C23,23.034 17.843,28 11.5,28 C5.157,28 0,23.034 0,16.889 C0,16.481 0.023,16.076 0.068,15.675 Z"
-          fill="#FF9600"
-          stroke="#FFFFFF"
-          strokeWidth="2"
-        />
-        <path
-          d="M8.012,16.077 C8.02645313,16.0400285 8.04561094,16.0050739 8.069,15.973 L10.719,12.364 C10.8930682,12.1267419 11.1697362,11.9865812 11.464,11.9865812 C11.7582638,11.9865812 12.0349317,12.1267419 12.209,12.364 L14.732,15.8 C15.5411747,16.594774 15.9979151,17.6807932 16,18.815 C16,21.208 13.985,23.148 11.5,23.148 C9.015,23.148 7,21.208 7,18.815 C7,17.776 7.38,16.823 8.012,16.077 Z"
-          fill="#FFC800"
-        />
-      </g>
+    <svg className="flame" width={width} height={height} viewBox="0 0 23 28" aria-hidden style={{ flexShrink: 0 }}>
+      <path
+        fillRule="nonzero"
+        d="M0.068,15.675 L0.044,7.216 C0.039,5.334 1.25,3.942 3.056,4.246 C3.413,4.306 3.998,4.491 4.306,4.656 L5.997,5.561 L9.247,1.464 C9.79255754,0.776391272 10.6222536,0.37555895 11.5,0.37555895 C12.3777464,0.37555895 13.2074425,0.776391272 13.753,1.464 L20.523,10 C22.1231469,11.939276 22.9988566,14.3747884 23,16.889 C23,23.034 17.843,28 11.5,28 C5.157,28 0,23.034 0,16.889 C0,16.481 0.023,16.076 0.068,15.675 Z"
+        fill="#FF9600"
+        stroke={withStroke ? '#FFFFFF' : undefined}
+        strokeWidth={withStroke ? 2 : undefined}
+      />
+      <path
+        fillRule="nonzero"
+        d="M8.012,16.077 C8.02645313,16.0400285 8.04561094,16.0050739 8.069,15.973 L10.719,12.364 C10.8930682,12.1267419 11.1697362,11.9865812 11.464,11.9865812 C11.7582638,11.9865812 12.0349317,12.1267419 12.209,12.364 L14.732,15.8 C15.5411747,16.594774 15.9979151,17.6807932 16,18.815 C16,21.208 13.985,23.148 11.5,23.148 C9.015,23.148 7,21.208 7,18.815 C7,17.776 7.38,16.823 8.012,16.077 Z"
+        fill="#FFC800"
+      />
+    </svg>
+  );
+}
+
+/** Gem. Hover glows and cycles the two crown facets in counter-phase via `.gem` (index.css). */
+export function GemIcon({ width = 22, height = 20 }: { width?: number; height?: number }) {
+  return (
+    <svg className="gem" width={width} height={height} viewBox="0 0 22 20" aria-hidden style={{ flexShrink: 0 }}>
+      <path fill="#1cb0f6" d="M6 1.4h10l5 6.2-10 11.2L1 7.6z" />
+      <path fill="#1899d6" d="M11 18.8 1 7.6h20z" />
+      <path className="gem-facet gem-facet-2" fill="#57ccff" d="M6 1.4 1 7.6h20l-5-6.2z" />
+      <path className="gem-facet" fill="#8ddcff" d="M6 1.4 11 7.6l5-6.2z" />
     </svg>
   );
 }

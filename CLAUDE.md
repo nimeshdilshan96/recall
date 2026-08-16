@@ -68,6 +68,14 @@ Three rolling **7-day** gauges on the Stats screen, computed in `repo.ts:getRete
 - **UI conventions**: `class="tip"` + `data-tip` = the CSS-only tooltip (index.css); `.chart-col`/
   `.chart-marker` add the line-chart hover dot. The "What's new" dialog content lives in
   `src/data/changelog.ts` — bump `version` to announce; dismissal stores `users.seen_version`.
+- **Responsive patterns**: inline styles can't use media queries, so responsive values go through
+  CSS variables in index.css (e.g. `--study-*` shrink under `@media (max-height: 580px)` so the
+  Study card fits with the mobile keyboard open). Home renders deck rows in two layouts via
+  `useIsMobile` — desktop keeps the hover-reveal Delete; mobile shows Delete inline.
+- **Icons**: flame/gem (icons.tsx) animate on hover via index.css; `class="icon-stat"` on an
+  icon+number wrapper makes the whole group a hover trigger. iOS shortcuts use
+  `public/apple-touch-icon.png` (180×180 PNG, solid background — iOS ignores favicon.svg and
+  composites transparency onto black; icon cached until the shortcut is re-added).
 
 ## Deploy (full guide in DEPLOY.md)
 
