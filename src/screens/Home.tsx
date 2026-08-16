@@ -75,8 +75,10 @@ export function Home() {
                 <div className="deck-actions">
                   {!d.imported && (
                     <button
+                      className="tip"
                       onClick={() => (pub ? actions.setDeckVisibility(d.id, 'private') : setPendingShare(d))}
-                      title={pub ? 'Public — anyone on this server can copy it. Click to make private.' : 'Private — click to share to Community.'}
+                      data-tip={pub ? 'Public — click to make private' : 'Private — click to make public'}
+                      aria-label={pub ? 'Public — click to make private' : 'Private — click to make public'}
                       style={{ width: 34, height: 34, borderRadius: 9, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: pub ? 'var(--accent-tint)' : 'oklch(0.93 0 0)', flexShrink: 0 }}
                     >
                       <PadlockIcon open={pub} color={pub ? 'var(--accent)' : '#afafaf'} />

@@ -4,7 +4,7 @@ import type { Deck, DeckVisibility, RecallCard, CardType } from './data/types.ts
 import { parseCloze } from './util/answer.ts';
 import { pickAccent } from './theme.ts';
 import { api, type StudyDirection, type PublicUser, type HardestCard, type Retention, type CommunityDeck, type CommunityDeckDetail } from './api.ts';
-import { CHANGELOG } from './data/changelog.ts';
+import { CURRENT_VERSION } from './data/changelog.ts';
 
 export type { StudyDirection };
 export type { CommunityDeck, CommunityDeckDetail };
@@ -63,6 +63,7 @@ export interface AppState {
   addBusy: boolean;
 
   hardest: HardestCard[];
+  matureHistory: { counts: number[]; firstEventAt: number | null };
 
   community: CommunityDeck[];
   communityPreview: CommunityDeckDetail | null;
@@ -203,6 +204,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addedCount: 0,
     addBusy: false,
     hardest: [],
+    matureHistory: { counts: [], firstEventAt: null },
     community: [],
     communityPreview: null,
     communityBusy: false,
@@ -238,7 +240,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       gems: user.gems,
       newLimit: user.newLimit,
       studyDirection: user.studyDirection,
-      showWhatsNew: user.seenVersion !== CHANGELOG.version,
+      showWhatsNew: user.seenVersion !== CURRENT_VERSION,
       decks,
       history: hist.reviews,
       today,
@@ -301,7 +303,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       showToast,
       dismissWhatsNew: () => {
         patch({ showWhatsNew: false }); // optimistic — worst case it reappears next login
-        api.updateSettings({ seenVersion: CHANGELOG.version }).catch(() => {});
+        api.updateSettings({ seenVersion: CURRENT_VERSION }).catch(() => {});
       },
 
       startStudy: (deckId) => {
@@ -552,6 +554,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
         api
           .history()
           .then((h) => patch({ history: h.reviews }))
+          .catch(() => {});
+        api
+          .matureHistory()
+          .then((matureHistory) => patch({ matureHistory }))
           .catch(() => {});
         Promise.all([1, 7, 30, 365].map((days) => api.retention(days)))
           .then(([today, week, month, year]) => patch({

@@ -67,6 +67,7 @@ db.exec(`
     reviewed_at  INTEGER NOT NULL   -- epoch ms
   );
   CREATE INDEX IF NOT EXISTS idx_reviewlog_user ON review_log(user_id, reviewed_at);
+  CREATE INDEX IF NOT EXISTS idx_reviewlog_card ON review_log(card_id, reviewed_at);
 `);
 
 // Migrations for databases created before these columns existed.

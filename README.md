@@ -43,7 +43,8 @@ Browser (Vite SPA)  ──fetch /api──►  Fastify (server/)  ──►  rep
 ### Data model (SQLite)
 
 ```
-users (id, username, password_hash, xp, gems, created_at, new_limit, study_direction)
+users (id, username, password_hash, xp, gems, created_at, new_limit, study_direction,
+       seen_version)               -- last "What's new" version dismissed (null = never)
 decks (id, user_id, name, color, pos,
        visibility,                  -- 'private' (default) | 'public' — public = listed in Community
        forked_from)                 -- source deck id if this deck was imported from Community
@@ -94,6 +95,34 @@ review today; it only resets after a full missed day (Duolingo-style).
 **Cloze-style cards:** a card may carry a fill-in-the-blank prompt on the front (e.g.
 `Jeg er ___ legen.` with the answer `hos` on the back) to disambiguate function words. The legacy
 `{{}}` marker is also rendered as a blank.
+
+**Mature cards over time** (`repo.ts:getMatureHistory`, `GET /api/mature-history`): a line chart
+of how many mature cards (state = Review **and** stability ≥ 21 — the same definition as the
+card-counts donut) you held on each day, with 1W/1M/3M/1Y windows. It's **reconstructed
+losslessly from the review log**, not snapshotted: a card's memory state only changes at reviews,
+and each log row records the state going *into* its grade — so the state a review *set* is the
+next row's `*_before` (or the card's current row, for its latest review). Chaining those yields
+every card's exact maturity timeline; maturity flips become ±1 events and one sweep samples the
+running count per day. Deterministic invariant: the series' last point always equals the live
+mature count. Reviews logged before the `*_before` migration can't be classified, so the chart
+clamps its x-axis to the first knowable data point. Deleting a deck rewrites this history, like
+every other stat.
+
+**Calendar** shows the current year (Jan 1 → Dec 31, Monday-first columns, month labels); future
+days render as faint placeholders. `/api/history` returns 366 trailing days so Jan 1 is always
+covered — the streak and the reviews chart read from the tail of the same array.
+
+**Chart tooltips:** every chart (and the deck padlock) uses one CSS-only tooltip: put
+`class="tip"` + `data-tip="…"` on an element (`index.css`). The line chart adds a per-day hover
+marker + guide line via `.chart-col`/`.chart-marker`.
+
+## Announcing releases (the "What's new" dialog)
+
+`src/data/changelog.ts` holds a list of releases (newest first); the dialog shows them all, with
+older ones under an "Earlier" divider — keep the list to the last 1–2 releases. After login,
+users who haven't dismissed the *newest* version see the dialog once (new users included);
+"Got it" stores that version in `users.seen_version` via the settings PATCH. To announce a
+release: unshift a new entry and trim old ones.
 
 ## Sharing decks (Community)
 

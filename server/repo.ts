@@ -479,6 +479,66 @@ export function getTodayCounts(userId: string): { reviewDone: number; newDone: n
   return { reviewDone, newDone };
 }
 
+/**
+ * Mature-card count per day (oldest first), reconstructed losslessly from the review log.
+ *
+ * A card's memory state only changes at reviews, and each log row snapshots the state going
+ * *into* its grade — so the state a review *set* is the next row's `*_before` (or the card's
+ * current row, for its latest review). Chaining those gives every card's exact maturity
+ * timeline; "mature" matches `selectors.maturity`: state = Review AND stability ≥ 21.
+ * Pre-snapshot rows (null `*_before`) are unknowable and skipped — the series is accurate
+ * from `firstEventAt` onward and its last point always equals the live mature count.
+ */
+export function getMatureHistory(userId: string, days = 365): { counts: number[]; firstEventAt: number | null } {
+  const DAY = 86_400_000;
+  const stmt = db.prepare(
+    `SELECT rl.card_id AS cid, rl.reviewed_at AS at, rl.stability_before AS sb, rl.state_before AS st,
+            c.stability AS curS, c.state AS curSt
+     FROM review_log rl
+     JOIN cards c ON c.id = rl.card_id
+     JOIN decks d ON d.id = c.deck_id
+     WHERE d.user_id = ?
+     ORDER BY rl.card_id, rl.reviewed_at, rl.id`,
+  );
+  interface Row { cid: string; at: number; sb: number | null; st: number | null; curS: number | null; curSt: number }
+
+  // One streaming pass: chain each card's reviews into maturity flip events (+1 / -1).
+  const events: { at: number; delta: 1 | -1 }[] = [];
+  let group: Row[] = [];
+  const flush = () => {
+    let mature = false; // every card starts immature
+    for (let k = 0; k < group.length; k++) {
+      const afterS = k + 1 < group.length ? group[k + 1].sb : group[k].curS;
+      const afterSt = k + 1 < group.length ? group[k + 1].st : group[k].curSt;
+      if (afterS === null || afterSt === null) continue; // pre-snapshot gap: unknowable step
+      const isMature = afterSt === 2 && afterS >= 21;
+      if (isMature !== mature) events.push({ at: group[k].at, delta: isMature ? 1 : -1 });
+      mature = isMature;
+    }
+    group = [];
+  };
+  for (const r of stmt.iterate(userId) as IterableIterator<Row>) {
+    if (group.length > 0 && group[0].cid !== r.cid) flush();
+    group.push(r);
+  }
+  flush();
+  events.sort((a, b) => a.at - b.at);
+
+  // Sweep day boundaries sampling a running count. Events before the window fold into the
+  // first sample (e starts at 0) — do NOT pre-filter events to the window, or the baseline breaks.
+  const now = Date.now();
+  const startOfToday = now - (now % DAY);
+  const counts = new Array(days).fill(0);
+  let n = 0;
+  let e = 0;
+  for (let d = 0; d < days; d++) {
+    const dayEnd = startOfToday - (days - 1 - d) * DAY + DAY;
+    while (e < events.length && events[e].at < dayEnd) n += events[e++].delta;
+    counts[d] = n;
+  }
+  return { counts, firstEventAt: events.length ? events[0].at : null };
+}
+
 export interface HardestCard {
   id: string;
   front: string;

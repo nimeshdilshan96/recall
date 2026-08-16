@@ -179,7 +179,8 @@ app.post('/api/cards/:id/answer', async (req, reply) => {
 app.get('/api/history', async (req, reply) => {
   const id = requireUser(req, reply);
   if (!id) return;
-  return repo.getHistory(id, 126);
+  // 366 trailing days: enough to cover Jan 1 of the current year from any date (leap-safe).
+  return repo.getHistory(id, 366);
 });
 
 app.patch('/api/settings', async (req, reply) => {
@@ -206,6 +207,12 @@ app.get('/api/retention', async (req, reply) => {
     return reply.code(400).send({ error: 'days must be one of 1, 7, 30, or 365' });
   }
   return repo.getRetention(id, days);
+});
+
+app.get('/api/mature-history', async (req, reply) => {
+  const id = requireUser(req, reply);
+  if (!id) return;
+  return repo.getMatureHistory(id);
 });
 
 app.get('/api/hardest', async (req, reply) => {

@@ -57,6 +57,17 @@ Three rolling **7-day** gauges on the Stats screen, computed in `repo.ts:getRete
 - **Streak** (`selectors.ts:streakFrom`): consecutive days with >0 reviews ending today; a day
   with no reviews *yet* doesn't reset it (Duolingo-style — holds at yesterday's value, +1s once
   you review, resets only after a full missed day).
+- **Mature cards over time** (`repo.ts:getMatureHistory`, `GET /api/mature-history`): per-day
+  mature count reconstructed from the log — the state a review *set* = the next row's `*_before`
+  (or the card's current row for its last review). Mature must match `selectors.maturity`:
+  **state = Review AND stability ≥ 21** (stability alone diverges after lapses). Don't pre-filter
+  events to the chart window — earlier events form the baseline. Invariant: last point == live
+  mature count. `idx_reviewlog_card` supports this and the retention subqueries.
+- `/api/history` returns **366 trailing days** (covers Jan 1 for the year-view Calendar); the
+  streak and reviews chart read the array's tail, so the length is safe to grow but not shrink.
+- **UI conventions**: `class="tip"` + `data-tip` = the CSS-only tooltip (index.css); `.chart-col`/
+  `.chart-marker` add the line-chart hover dot. The "What's new" dialog content lives in
+  `src/data/changelog.ts` — bump `version` to announce; dismissal stores `users.seen_version`.
 
 ## Deploy (full guide in DEPLOY.md)
 

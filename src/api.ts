@@ -124,6 +124,7 @@ export const api = {
   importDeck: async (deckId: string): Promise<Deck> => reviveDeck((await req<{ deck: WireDeck }>('POST', `/api/community/${deckId}/import`)).deck),
   pullNewCards: async (deckId: string): Promise<RecallCard[]> => (await req<{ cards: WireCard[] }>('POST', `/api/decks/${deckId}/pull`)).cards.map(reviveCard),
 
+  matureHistory: () => req<{ counts: number[]; firstEventAt: number | null }>('GET', '/api/mature-history'),
   today: () => req<{ reviewDone: number; newDone: number }>('GET', '/api/today'),
   retention: (days = 7) => req<Retention>('GET', `/api/retention?days=${days}`),
   hardest: async (): Promise<HardestCard[]> => (await req<{ cards: HardestCard[] }>('GET', '/api/hardest')).cards,

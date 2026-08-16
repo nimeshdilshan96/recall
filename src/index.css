@@ -11,7 +11,7 @@ body,
 body {
   /* Latin glyphs use the primary face; CJK (Japanese decks, etc.) falls through to Noto Sans JP. */
   --font-ui: 'Hanken Grotesk', 'Noto Sans JP', system-ui, sans-serif;
-  --font-display: 'Bricolage Grotesque', 'Noto Sans JP', sans-serif;
+  --font-display: 'Hanken Grotesk', 'Noto Sans JP', system-ui, sans-serif; /* same as --font-ui — single-font look */
   /* "mono" slots (counts, intervals, XP) now use the sans UI face instead of a monospace font. */
   --font-mono: 'Hanken Grotesk', 'Noto Sans JP', system-ui, sans-serif;
   font-family: var(--font-ui);
@@ -82,6 +82,51 @@ input:focus {
   cursor: not-allowed;
   filter: none;
   transform: none;
+}
+
+/* Styled tooltip: put class="tip" + data-tip="..." on an element. Dark pill below it,
+   shown on hover/keyboard focus. Pure CSS — no state, no portal. */
+.tip {
+  position: relative;
+}
+.tip::after {
+  content: attr(data-tip);
+  display: none; /* fully removed when hidden — an invisible box would still widen the page */
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: oklch(0.93 0 0 / 0.72);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  box-shadow: 0 4px 14px -4px rgba(0, 0, 0, 0.18);
+  color: #2b2b2b;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 9px 13px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 55; /* above cards/legends, below modal overlays (60) */
+}
+.tip:hover::after,
+.tip:focus-visible::after {
+  display: block;
+  animation: tipIn 0.12s ease 0.15s both;
+}
+@keyframes tipIn {
+  from { opacity: 0; margin-top: -3px; }
+  to { opacity: 1; margin-top: 0; }
+}
+
+/* Line-chart hover: each invisible day column reveals its guide line + point marker. */
+.chart-col .chart-marker {
+  opacity: 0;
+  transition: opacity 0.1s ease;
+  pointer-events: none;
+}
+.chart-col:hover .chart-marker {
+  opacity: 1;
 }
 
 /* Plain red "Delete" text link (card rows, deck rows). Non-bold, underline on hover. */
