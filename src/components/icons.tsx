@@ -1,4 +1,4 @@
-export type NavKey = 'home' | 'add' | 'league' | 'stats' | 'browse';
+export type NavKey = 'home' | 'add' | 'community' | 'league' | 'stats' | 'browse';
 
 export function NavIcon({ name, color, size }: { name: NavKey; color: string; size: number }) {
   const stroke = { stroke: color, fill: 'none', strokeWidth: 2.2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, display: 'block' as const };
@@ -15,6 +15,13 @@ export function NavIcon({ name, color, size }: { name: NavKey; color: string; si
       <svg width={size} height={size} viewBox="0 0 24 24" style={stroke}>
         <path d="M12 5v14" />
         <path d="M5 12h14" />
+      </svg>
+    );
+  if (name === 'community')
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" style={{ ...stroke, strokeWidth: 2 }}>
+        <circle cx={12} cy={12} r={9} />
+        <path d="M15.5 8.5l-1.8 5.2-5.2 1.8 1.8-5.2z" />
       </svg>
     );
   if (name === 'stats')
@@ -53,6 +60,16 @@ export function FlameIcon() {
           fill="#FFC800"
         />
       </g>
+    </svg>
+  );
+}
+
+/** Deck visibility badge: closed = private, open = public (shared to Community). */
+export function PadlockIcon({ open, color, size = 15 }: { open: boolean; color: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" style={{ stroke: color, fill: 'none', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', display: 'block' }}>
+      <rect x={4.5} y={10.5} width={15} height={10} rx={2.8} />
+      {open ? <path d="M8.5 10.5V7a3.5 3.5 0 0 1 6.8-1.2" /> : <path d="M8.5 10.5V7a3.5 3.5 0 0 1 7 0v3.5" />}
     </svg>
   );
 }

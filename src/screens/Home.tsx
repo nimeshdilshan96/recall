@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useApp } from '../store.tsx';
 import { deckCounts, maturity, totals } from '../selectors.ts';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
+import { PadlockIcon } from '../components/icons.tsx';
 import type { Deck } from '../data/types.ts';
 
 // Daily new-card target (Anki's default is 20/day).
@@ -10,6 +11,7 @@ const NEW_TARGET = 20;
 export function Home() {
   const { state, actions } = useApp();
   const [pending, setPending] = useState<Deck | null>(null);
+  const [pendingShare, setPendingShare] = useState<Deck | null>(null);
   const now = new Date();
   const t = totals(state, now);
 
@@ -59,44 +61,69 @@ export function Home() {
         {state.decks.map((d) => {
           const { neu, due, total } = deckCounts(d, now);
           const has = neu + due > 0;
+          const pub = d.visibility === 'public';
           return (
-            <div key={d.id} className="deck-row" style={{ display: 'flex', alignItems: 'center', gap: 16, background: 'oklch(0.99 0 0)', border: '2px solid oklch(0.9 0 0)', borderRadius: 16, padding: '16px 18px', position: 'relative' }}>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#4b4b4b' }}>{d.name}</div>
-                <div style={{ fontSize: 12.5, color: '#afafaf', marginTop: 2 }}>{total} cards</div>
-              </div>
-              <div className="deck-actions">
-                <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontFamily: 'var(--font-mono)' }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 17, fontWeight: 700, color: 'oklch(0.55 0.11 250)' }}>{neu}</div>
-                    <div style={{ fontSize: 9.5, color: '#afafaf', letterSpacing: '0.05em' }}>NEW</div>
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 17, fontWeight: 700, color: 'oklch(0.62 0.12 150)' }}>{due}</div>
-                    <div style={{ fontSize: 9.5, color: '#afafaf', letterSpacing: '0.05em' }}>DUE</div>
+            <div key={d.id} style={{ background: 'oklch(0.99 0 0)', border: '2px solid oklch(0.9 0 0)', borderRadius: 16 }}>
+              <div className="deck-row" style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 18px', position: 'relative' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#4b4b4b' }}>{d.name}</div>
+                  <div style={{ fontSize: 12.5, color: '#afafaf', marginTop: 2 }}>
+                    {total} cards
+                    {d.fromUsername && ` · from @${d.fromUsername}`}
                   </div>
                 </div>
-                <button className="btn3d" onClick={() => actions.startPractice(d.id)} style={{ padding: '11px 18px 13px', borderRadius: 13, minWidth: 96, fontSize: 13 }}>
-                  Practice
-                </button>
-                {has ? (
-                  <button className="btn3d" onClick={() => actions.startStudy(d.id)} style={{ padding: '11px 20px 13px', borderRadius: 13, minWidth: 96, fontSize: 13 }}>
-                    Study
+                <div className="deck-actions">
+                  {!d.imported && (
+                    <button
+                      onClick={() => (pub ? actions.setDeckVisibility(d.id, 'private') : setPendingShare(d))}
+                      title={pub ? 'Public — anyone on this server can copy it. Click to make private.' : 'Private — click to share to Community.'}
+                      style={{ width: 34, height: 34, borderRadius: 9, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: pub ? 'var(--accent-tint)' : 'oklch(0.93 0 0)', flexShrink: 0 }}
+                    >
+                      <PadlockIcon open={pub} color={pub ? 'var(--accent)' : '#afafaf'} />
+                    </button>
+                  )}
+                  <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontFamily: 'var(--font-mono)' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 17, fontWeight: 700, color: 'oklch(0.55 0.11 250)' }}>{neu}</div>
+                      <div style={{ fontSize: 9.5, color: '#afafaf', letterSpacing: '0.05em' }}>NEW</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 17, fontWeight: 700, color: 'oklch(0.62 0.12 150)' }}>{due}</div>
+                      <div style={{ fontSize: 9.5, color: '#afafaf', letterSpacing: '0.05em' }}>DUE</div>
+                    </div>
+                  </div>
+                  <button className="btn3d" onClick={() => actions.startPractice(d.id)} style={{ padding: '11px 18px 13px', borderRadius: 13, minWidth: 96, fontSize: 13 }}>
+                    Practice
                   </button>
-                ) : (
-                  <button
-                    onClick={() => actions.showToast('No cards due in this deck')}
-                    style={{ border: 'none', cursor: 'pointer', background: 'oklch(0.92 0 0)', color: '#afafaf', fontSize: 13, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '11px 20px 13px', borderRadius: 13, minWidth: 96, boxShadow: '0 4px 0 oklch(0.82 0 0)' }}
-                  >
-                    Done
+                  {has ? (
+                    <button className="btn3d" onClick={() => actions.startStudy(d.id)} style={{ padding: '11px 20px 13px', borderRadius: 13, minWidth: 96, fontSize: 13 }}>
+                      Study
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => actions.showToast('No cards due in this deck')}
+                      style={{ border: 'none', cursor: 'pointer', background: 'oklch(0.92 0 0)', color: '#afafaf', fontSize: 13, fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', padding: '11px 20px 13px', borderRadius: 13, minWidth: 96, boxShadow: '0 4px 0 oklch(0.82 0 0)' }}
+                    >
+                      Done
+                    </button>
+                  )}
+                </div>
+                <span className="deck-delete">
+                  <button className="link-delete" onClick={() => setPending(d)}>
+                    Delete
                   </button>
-                )}
+                </span>
               </div>
-              <span className="deck-delete">
-                <button className="link-delete" onClick={() => setPending(d)}>
-                  Delete
-                </button>
-              </span>
+              {d.newAvailable > 0 && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '0 18px 16px', background: 'var(--accent-tint)', borderRadius: 12, padding: '10px 10px 10px 14px' }}>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: '#4b4b4b' }}>
+                    {d.newAvailable} new card{d.newAvailable === 1 ? '' : 's'} available from @{d.fromUsername}
+                  </span>
+                  <button className="btn3d" onClick={() => actions.pullNewCards(d.id)} style={{ padding: '9px 14px 11px', borderRadius: 11, fontSize: 12 }}>
+                    Get new cards
+                  </button>
+                </div>
+              )}
             </div>
           );
         })}
@@ -105,6 +132,20 @@ export function Home() {
       <button onClick={() => actions.goto('add')} style={{ marginTop: 18, border: '1.5px dashed oklch(0.82 0.03 70)', background: 'transparent', color: '#777777', cursor: 'pointer', width: '100%', padding: 14, borderRadius: 14, fontSize: 13.5, fontWeight: 600 }}>
         + Add cards to a deck
       </button>
+
+      {pendingShare && (
+        <ConfirmDialog
+          title={`Share ${pendingShare.name.split(' — ')[0]}?`}
+          message="It will appear in Community, where anyone on this server can browse it and copy the cards. You can make it private again anytime."
+          confirmLabel="Make public"
+          confirmColor="var(--accent)"
+          onConfirm={() => {
+            actions.setDeckVisibility(pendingShare.id, 'public');
+            setPendingShare(null);
+          }}
+          onCancel={() => setPendingShare(null)}
+        />
+      )}
 
       {pending && (
         <ConfirmDialog

@@ -122,6 +122,47 @@ app.delete('/api/decks/:id', async (req, reply) => {
   return { ok: true };
 });
 
+// ---- public deck sharing (Community) ----
+app.patch('/api/decks/:id', async (req, reply) => {
+  const id = requireUser(req, reply);
+  if (!id) return;
+  const deckId = (req.params as { id: string }).id;
+  const { visibility } = (req.body ?? {}) as { visibility?: string };
+  if (visibility !== 'private' && visibility !== 'public') return reply.code(400).send({ error: "visibility must be 'private' or 'public'" });
+  if (!repo.setDeckVisibility(id, deckId, visibility)) return reply.code(404).send({ error: 'Deck not found' });
+  return { ok: true };
+});
+
+app.get('/api/community', async (req, reply) => {
+  const id = requireUser(req, reply);
+  if (!id) return;
+  return { decks: repo.listPublicDecks(id) };
+});
+
+app.get('/api/community/:id', async (req, reply) => {
+  const id = requireUser(req, reply);
+  if (!id) return;
+  const deck = repo.getPublicDeckCards((req.params as { id: string }).id);
+  if (!deck) return reply.code(404).send({ error: 'Deck not found' });
+  return { deck };
+});
+
+app.post('/api/community/:id/import', async (req, reply) => {
+  const id = requireUser(req, reply);
+  if (!id) return;
+  const deck = repo.importDeck(id, (req.params as { id: string }).id);
+  if (!deck) return reply.code(409).send({ error: 'Deck is not available or already added' });
+  return { deck };
+});
+
+app.post('/api/decks/:id/pull', async (req, reply) => {
+  const id = requireUser(req, reply);
+  if (!id) return;
+  const cards = repo.pullNewCards(id, (req.params as { id: string }).id);
+  if (!cards) return reply.code(404).send({ error: 'No public source deck to pull from' });
+  return { cards };
+});
+
 app.post('/api/cards/:id/answer', async (req, reply) => {
   const id = requireUser(req, reply);
   if (!id) return;
@@ -144,8 +185,8 @@ app.get('/api/history', async (req, reply) => {
 app.patch('/api/settings', async (req, reply) => {
   const id = requireUser(req, reply);
   if (!id) return;
-  const { newLimit, studyDirection } = (req.body ?? {}) as { newLimit?: number; studyDirection?: 'front' | 'back' | 'both' };
-  const user = repo.updateSettings(id, { newLimit, studyDirection });
+  const { newLimit, studyDirection, seenVersion } = (req.body ?? {}) as { newLimit?: number; studyDirection?: 'front' | 'back' | 'both'; seenVersion?: string };
+  const user = repo.updateSettings(id, { newLimit, studyDirection, seenVersion });
   if (!user) return reply.code(404).send({ error: 'Not found' });
   return { user };
 });

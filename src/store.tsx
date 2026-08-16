@@ -1,12 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { RecallScheduler, Rating, State } from './fsrs/recall-scheduler.ts';
-import type { Deck, RecallCard, CardType } from './data/types.ts';
+import type { Deck, DeckVisibility, RecallCard, CardType } from './data/types.ts';
 import { parseCloze } from './util/answer.ts';
 import { pickAccent } from './theme.ts';
-import { api, type StudyDirection, type PublicUser, type HardestCard, type Retention } from './api.ts';
+import { api, type StudyDirection, type PublicUser, type HardestCard, type Retention, type CommunityDeck, type CommunityDeckDetail } from './api.ts';
+import { CHANGELOG } from './data/changelog.ts';
 
 export type { StudyDirection };
-export type Screen = 'home' | 'study' | 'add' | 'league' | 'stats' | 'browse' | 'settings';
+export type { CommunityDeck, CommunityDeckDetail };
+export type Screen = 'home' | 'study' | 'add' | 'community' | 'league' | 'stats' | 'browse' | 'settings';
 export type AuthMode = 'login' | 'register';
 
 interface CardRef {
@@ -62,6 +64,10 @@ export interface AppState {
 
   hardest: HardestCard[];
 
+  community: CommunityDeck[];
+  communityPreview: CommunityDeckDetail | null;
+  communityBusy: boolean; // an import is in flight
+
   newLimit: number;
   studyDirection: StudyDirection;
 
@@ -69,6 +75,7 @@ export interface AppState {
   gems: number;
   menuOpen: boolean;
   toast: string;
+  showWhatsNew: boolean; // the user hasn't dismissed the current CHANGELOG version yet
 }
 
 export interface AppActions {
@@ -81,6 +88,7 @@ export interface AppActions {
   goto(screen: Screen): void;
   toggleMenu(open?: boolean): void;
   showToast(msg: string): void;
+  dismissWhatsNew(): void;
 
   startStudy(deckId: string): void;
   startPractice(deckId: string): void;
@@ -100,6 +108,13 @@ export interface AppActions {
   addCard(): void;
 
   loadHardest(): void;
+
+  loadCommunity(): void;
+  openCommunityDeck(deckId: string): void;
+  closeCommunityPreview(): void;
+  importCommunityDeck(deckId: string): void;
+  setDeckVisibility(deckId: string, visibility: DeckVisibility): void;
+  pullNewCards(deckId: string): void;
 
   setNewLimit(n: number): void;
   setStudyDirection(d: StudyDirection): void;
@@ -188,12 +203,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addedCount: 0,
     addBusy: false,
     hardest: [],
+    community: [],
+    communityPreview: null,
+    communityBusy: false,
     newLimit: 20,
     studyDirection: 'front',
     xp: 0,
     gems: 0,
     menuOpen: false,
     toast: '',
+    showWhatsNew: false,
   }));
 
   // Mirror of state for reads inside async actions (avoids stale closures / side effects in updaters).
@@ -219,6 +238,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       gems: user.gems,
       newLimit: user.newLimit,
       studyDirection: user.studyDirection,
+      showWhatsNew: user.seenVersion !== CHANGELOG.version,
       decks,
       history: hist.reviews,
       today,
@@ -279,6 +299,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       goto: (screen) => patch({ screen, menuOpen: false }),
       toggleMenu: (open) => setState((s) => ({ ...s, menuOpen: open ?? !s.menuOpen })),
       showToast,
+      dismissWhatsNew: () => {
+        patch({ showWhatsNew: false }); // optimistic — worst case it reappears next login
+        api.updateSettings({ seenVersion: CHANGELOG.version }).catch(() => {});
+      },
 
       startStudy: (deckId) => {
         const s = stateRef.current;
@@ -412,6 +436,61 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       loadHardest: () => {
         api.hardest().then((hardest) => patch({ hardest })).catch(() => {});
+      },
+
+      loadCommunity: () => {
+        api.community().then((community) => patch({ community })).catch(() => {});
+      },
+      openCommunityDeck: (deckId) => {
+        api.communityDeck(deckId).then(
+          (deck) => patch({ communityPreview: deck }),
+          (e) => {
+            showToast((e as Error).message);
+            api.community().then((community) => patch({ community })).catch(() => {}); // deck gone/private — resync the catalog
+          },
+        );
+      },
+      closeCommunityPreview: () => patch({ communityPreview: null }),
+      importCommunityDeck: async (deckId) => {
+        if (stateRef.current.communityBusy) return;
+        patch({ communityBusy: true });
+        try {
+          const deck = await api.importDeck(deckId);
+          setState((s) => ({
+            ...s,
+            decks: [...s.decks, deck],
+            community: s.community.map((c) => (c.id === deckId ? { ...c, added: true } : c)),
+            communityBusy: false,
+          }));
+          showToast(`Added ${deck.name.split(' — ')[0]} to your decks`);
+        } catch (e) {
+          patch({ communityBusy: false, communityPreview: null });
+          showToast((e as Error).message);
+          api.community().then((community) => patch({ community })).catch(() => {}); // import refused — resync the catalog
+        }
+      },
+      setDeckVisibility: (deckId, visibility) => {
+        const prev = stateRef.current.decks;
+        setState((s) => ({ ...s, decks: s.decks.map((d) => (d.id === deckId ? { ...d, visibility } : d)) })); // optimistic
+        api.setDeckVisibility(deckId, visibility).then(
+          () => showToast(visibility === 'public' ? 'Deck is now public' : 'Deck is now private'),
+          (e) => {
+            setState((s) => ({ ...s, decks: prev }));
+            showToast((e as Error).message);
+          },
+        );
+      },
+      pullNewCards: async (deckId) => {
+        try {
+          const cards = await api.pullNewCards(deckId);
+          setState((s) => ({
+            ...s,
+            decks: s.decks.map((d) => (d.id === deckId ? { ...d, cards: [...d.cards, ...cards], newAvailable: 0 } : d)),
+          }));
+          showToast(cards.length === 0 ? 'No new cards to add' : `Added ${cards.length} new card${cards.length === 1 ? '' : 's'}`);
+        } catch (e) {
+          showToast((e as Error).message);
+        }
       },
 
       setNewLimit: (n) => {

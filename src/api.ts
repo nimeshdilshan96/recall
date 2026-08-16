@@ -1,5 +1,5 @@
 import type { Card, Rating } from './fsrs/recall-scheduler.ts';
-import type { Deck, RecallCard, CardType } from './data/types.ts';
+import type { Deck, DeckVisibility, RecallCard, CardType } from './data/types.ts';
 
 // Wire format from the server: dates are epoch ms so JSON round-trips cleanly.
 export type StudyDirection = 'front' | 'back' | 'both';
@@ -29,7 +29,27 @@ interface WireDeck {
   id: string;
   name: string;
   color: string;
+  visibility: DeckVisibility;
+  imported: boolean;
+  fromUsername: string | null;
+  newAvailable: number;
   cards: WireCard[];
+}
+
+export interface CommunityDeck {
+  id: string;
+  name: string;
+  color: string;
+  author: string;
+  cardCount: number;
+  added: boolean;
+}
+export interface CommunityDeckDetail {
+  id: string;
+  name: string;
+  color: string;
+  author: string;
+  cards: { front: string; back: string; example: string | null; type: CardType }[];
 }
 export interface PublicUser {
   id: string;
@@ -38,6 +58,7 @@ export interface PublicUser {
   gems: number;
   newLimit: number;
   studyDirection: StudyDirection;
+  seenVersion: string | null;
 }
 
 export interface Retention {
@@ -62,7 +83,7 @@ function reviveCard(w: WireCard): RecallCard {
 }
 
 function reviveDeck(w: WireDeck): Deck {
-  return { id: w.id, name: w.name, color: w.color, cards: w.cards.map(reviveCard) };
+  return { id: w.id, name: w.name, color: w.color, visibility: w.visibility, imported: w.imported, fromUsername: w.fromUsername, newAvailable: w.newAvailable, cards: w.cards.map(reviveCard) };
 }
 
 async function req<T>(method: string, url: string, body?: unknown): Promise<T> {
@@ -92,10 +113,16 @@ export const api = {
   },
 
   createDeck: async (name: string): Promise<Deck> => reviveDeck((await req<{ deck: WireDeck }>('POST', '/api/decks', { name })).deck),
-  updateSettings: async (opts: { newLimit?: number; studyDirection?: StudyDirection }): Promise<PublicUser> =>
+  updateSettings: async (opts: { newLimit?: number; studyDirection?: StudyDirection; seenVersion?: string }): Promise<PublicUser> =>
     (await req<{ user: PublicUser }>('PATCH', '/api/settings', opts)).user,
   deleteCard: (cardId: string) => req<{ ok: true }>('DELETE', `/api/cards/${cardId}`),
   deleteDeck: (deckId: string) => req<{ ok: true }>('DELETE', `/api/decks/${deckId}`),
+
+  setDeckVisibility: (deckId: string, visibility: DeckVisibility) => req<{ ok: true }>('PATCH', `/api/decks/${deckId}`, { visibility }),
+  community: async (): Promise<CommunityDeck[]> => (await req<{ decks: CommunityDeck[] }>('GET', '/api/community')).decks,
+  communityDeck: async (deckId: string): Promise<CommunityDeckDetail> => (await req<{ deck: CommunityDeckDetail }>('GET', `/api/community/${deckId}`)).deck,
+  importDeck: async (deckId: string): Promise<Deck> => reviveDeck((await req<{ deck: WireDeck }>('POST', `/api/community/${deckId}/import`)).deck),
+  pullNewCards: async (deckId: string): Promise<RecallCard[]> => (await req<{ cards: WireCard[] }>('POST', `/api/decks/${deckId}/pull`)).cards.map(reviveCard),
 
   today: () => req<{ reviewDone: number; newDone: number }>('GET', '/api/today'),
   retention: (days = 7) => req<Retention>('GET', `/api/retention?days=${days}`),

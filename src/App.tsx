@@ -9,10 +9,12 @@ import { Home } from './screens/Home.tsx';
 import { Study } from './screens/Study.tsx';
 import { Add } from './screens/Add.tsx';
 import { Browse } from './screens/Browse.tsx';
+import { Community } from './screens/Community.tsx';
 import { League } from './screens/League.tsx';
 import { Stats } from './screens/Stats.tsx';
 import { Settings } from './screens/Settings.tsx';
 import { Toast } from './components/Toast.tsx';
+import { WhatsNewDialog } from './components/WhatsNewDialog.tsx';
 
 export function App() {
   const { state } = useApp();
@@ -50,6 +52,7 @@ export function App() {
       {state.screen === 'study' && <Study />}
       {state.screen === 'add' && <Add />}
       {state.screen === 'browse' && <Browse />}
+      {state.screen === 'community' && <Community />}
       {state.screen === 'league' && <League />}
       {state.screen === 'stats' && <Stats />}
       {state.screen === 'settings' && <Settings />}
@@ -62,6 +65,7 @@ export function App() {
       {!isMobile && <Sidebar />}
       {screen}
       {isMobile && <BottomNav />}
+      {state.showWhatsNew && <WhatsNewDialog />}
       <Toast />
     </div>
   );

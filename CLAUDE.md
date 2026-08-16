@@ -35,6 +35,12 @@ Open http://localhost:5173. The `data/recall.db` file is a normal SQLite DB you 
   first-ever review. This is what makes maturity-at-review-time recoverable.
 - Cards can be **cloze-style**: a fill-in-the-blank prompt on the front (a literal `___`, or the
   legacy `{{}}` marker) with the answer on the back — used to disambiguate function words.
+- **Deck sharing (Community)**: decks have `visibility` ('private' default | 'public'); public decks
+  are copied on import (fresh FSRS state, new ids), never shared live. Provenance columns
+  `decks.forked_from` + `cards.source_card_id` power "Added ✓" and the additive "Get new cards"
+  pull. Imported decks can't be re-shared (gate on the server's `imported` flag, not `fromUsername` —
+  the latter goes null when the source is deleted). Empty public decks are hidden from the catalog.
+  Details in README "Sharing decks (Community)".
 
 ## Stats & retention (details in README "Stats & retention")
 

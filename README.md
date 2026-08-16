@@ -27,7 +27,7 @@ npm run test:fsrs   # ALL PASS
 
 ```
 Browser (Vite SPA)  ──fetch /api──►  Fastify (server/)  ──►  repository  ──►  SQLite (better-sqlite3)
-   src/                                 auth · decks · cards · answer · stats        + Litestream → S3
+   src/                            auth · decks · cards · answer · community · stats     + Litestream → S3
    └─ RecallScheduler (previews)        └─ RecallScheduler (authoritative grading)
 ```
 
@@ -44,9 +44,12 @@ Browser (Vite SPA)  ──fetch /api──►  Fastify (server/)  ──►  rep
 
 ```
 users (id, username, password_hash, xp, gems, created_at, new_limit, study_direction)
-decks (id, user_id, name, color, pos)
+decks (id, user_id, name, color, pos,
+       visibility,                  -- 'private' (default) | 'public' — public = listed in Community
+       forked_from)                 -- source deck id if this deck was imported from Community
 cards (id, deck_id, front, back, example, type, mnemonic, image, created_at,
-       stability, difficulty, state, step, due, last_review)   -- the FSRS record, per card
+       stability, difficulty, state, step, due, last_review,   -- the FSRS record, per card
+       source_card_id)              -- original card id if copied from a public deck
 review_log (id, card_id, user_id, rating, reviewed_at,
             stability_before, state_before)                    -- + memory state going INTO the grade
 ```
@@ -91,6 +94,45 @@ review today; it only resets after a full missed day (Duolingo-style).
 **Cloze-style cards:** a card may carry a fill-in-the-blank prompt on the front (e.g.
 `Jeg er ___ legen.` with the answer `hos` on the back) to disambiguate function words. The legacy
 `{{}}` marker is also rendered as a blank.
+
+## Sharing decks (Community)
+
+Decks can be shared with the other accounts on the same server, AnkiWeb-style: a public deck is a
+**template others copy**, not a live shared object.
+
+**Publishing.** Every deck is **private by default**. The padlock on your own deck rows toggles it:
+tap to make it public (with a confirmation — "anyone on this server can browse and copy it"), tap
+again to make it private. Public decks with at least one card appear in the **Community** screen
+(empty ones stay hidden until they have something to copy).
+
+**Importing (copy-on-import).** From Community you can preview a deck's cards (content only — never
+anyone's scheduling state) and *Add to my decks*. That clones the deck and its cards into your
+account with **new ids and fresh FSRS state** — a copy is a new note for *your* memory, so everyone
+schedules independently. After import the catalog shows *Added ✓* and re-importing is refused.
+
+**Getting new cards later.** Each copy remembers where it came from (`decks.forked_from` +
+`cards.source_card_id`). When the author adds cards to a deck you imported, your copy shows a
+*"N new cards available from @author — Get new cards"* banner. Pulling is **additive only**: new
+cards arrive with fresh FSRS state; the author's edits and deletions are never propagated (your
+copy and review history are yours).
+
+Rules that keep this safe:
+
+- **Copies are independent.** Unpublishing or deleting the source never touches importers' copies —
+  the banner and attribution simply disappear.
+- **Imported decks can't be re-shared** (no padlock), even if the original is later deleted.
+- **Nothing is public by accident** — sharing is an explicit per-deck act, and a failed
+  preview/import (deck just unpublished) resyncs the catalog instead of erroring.
+
+The API surface, all cookie-authenticated (in `server/index.ts`, SQL in `repo.ts`):
+
+```
+PATCH /api/decks/:id                 { visibility: 'private' | 'public' }
+GET   /api/community                 catalog of other users' public decks (+ added flag)
+GET   /api/community/:id             read-only card preview of one public deck
+POST  /api/community/:id/import      copy the deck into your account
+POST  /api/decks/:id/pull            pull new cards from the (still public) source
+```
 
 ## Deploy
 

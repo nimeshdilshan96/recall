@@ -8,7 +8,7 @@ function starter(front: string, back: string, now: number): RecallCard {
 }
 
 export function seedDecks(now: number = Date.now()): Deck[] {
-  return [
+  const decks: Omit<Deck, 'visibility' | 'imported' | 'fromUsername' | 'newAvailable'>[] = [
     {
       id: 'd0',
       name: 'Japanese — JLPT N5',
@@ -59,4 +59,5 @@ export function seedDecks(now: number = Date.now()): Deck[] {
       ],
     },
   ];
+  return decks.map((d) => ({ ...d, visibility: 'private', imported: false, fromUsername: null, newAvailable: 0 }));
 }

@@ -2,12 +2,14 @@ interface Props {
   title: string;
   message: string;
   confirmLabel?: string;
+  /** Confirm button color; defaults to destructive red. */
+  confirmColor?: string;
   onConfirm(): void;
   onCancel(): void;
 }
 
-/** Centered modal for destructive confirmation (e.g. deleting a deck). */
-export function ConfirmDialog({ title, message, confirmLabel = 'Delete', onConfirm, onCancel }: Props) {
+/** Centered modal for confirmation (destructive red by default, e.g. deleting a deck). */
+export function ConfirmDialog({ title, message, confirmLabel = 'Delete', confirmColor = '#ff4b4b', onConfirm, onCancel }: Props) {
   return (
     <div
       onClick={onCancel}
@@ -29,7 +31,7 @@ export function ConfirmDialog({ title, message, confirmLabel = 'Delete', onConfi
           <button
             className="btn3d"
             onClick={onConfirm}
-            style={{ background: '#ff4b4b', boxShadow: '0 4px 0 color-mix(in srgb, #ff4b4b 72%, black)', fontSize: 14, padding: '11px 20px 13px', borderRadius: 13 }}
+            style={{ background: confirmColor, boxShadow: `0 4px 0 color-mix(in srgb, ${confirmColor} 72%, black)`, fontSize: 14, padding: '11px 20px 13px', borderRadius: 13 }}
           >
             {confirmLabel}
           </button>

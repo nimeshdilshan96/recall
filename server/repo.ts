@@ -21,10 +21,19 @@ export interface WireCard {
   createdAt: number;
   fsrs: { stability: number | null; difficulty: number | null; state: number; step: number | null; due: number; lastReview: number | null };
 }
+export type DeckVisibility = 'private' | 'public';
+
 export interface WireDeck {
   id: string;
   name: string;
   color: string;
+  visibility: DeckVisibility;
+  /** True if this deck was copied from a public deck (imported decks can't be re-shared). */
+  imported: boolean;
+  /** Author of the source deck, when this deck was imported and the source still exists. */
+  fromUsername: string | null;
+  /** Cards in the (still public) source deck not yet pulled into this copy. */
+  newAvailable: number;
   cards: WireCard[];
 }
 export interface PublicUser {
@@ -34,6 +43,8 @@ export interface PublicUser {
   gems: number;
   newLimit: number;
   studyDirection: StudyDirection;
+  /** Last "What's new" version the user dismissed (null = never). */
+  seenVersion: string | null;
 }
 
 interface CardRow {
@@ -80,7 +91,7 @@ function toCard(r: CardRow): Card {
 
 // ---- users ----
 
-const USER_COLS = 'id, username, xp, gems, new_limit AS newLimit, study_direction AS studyDirection';
+const USER_COLS = 'id, username, xp, gems, new_limit AS newLimit, study_direction AS studyDirection, seen_version AS seenVersion';
 
 export function getUserByUsername(username: string): (PublicUser & { password_hash: string }) | undefined {
   return db.prepare(`SELECT ${USER_COLS}, password_hash FROM users WHERE username = ?`).get(username) as any;
@@ -91,13 +102,16 @@ export function getUser(id: string): PublicUser | undefined {
 }
 
 /** Update a user's study settings. Returns the updated public user. */
-export function updateSettings(userId: string, opts: { newLimit?: number; studyDirection?: StudyDirection }): PublicUser | undefined {
+export function updateSettings(userId: string, opts: { newLimit?: number; studyDirection?: StudyDirection; seenVersion?: string }): PublicUser | undefined {
   if (typeof opts.newLimit === 'number') {
     const n = Math.max(0, Math.min(999, Math.round(opts.newLimit)));
     db.prepare('UPDATE users SET new_limit = ? WHERE id = ?').run(n, userId);
   }
   if (opts.studyDirection && ['front', 'back', 'both'].includes(opts.studyDirection)) {
     db.prepare('UPDATE users SET study_direction = ? WHERE id = ?').run(opts.studyDirection, userId);
+  }
+  if (typeof opts.seenVersion === 'string' && opts.seenVersion.length <= 20) {
+    db.prepare('UPDATE users SET seen_version = ? WHERE id = ?').run(opts.seenVersion, userId);
   }
   return getUser(userId);
 }
@@ -108,7 +122,7 @@ export const createUser = db.transaction((username: string, password: string): P
   const now = Date.now();
   db.prepare('INSERT INTO users (id, username, password_hash, xp, gems, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(id, username, hashPassword(password), 0, 500, now);
 
-  return { id, username, xp: 0, gems: 500, newLimit: 20, studyDirection: 'front' };
+  return { id, username, xp: 0, gems: 500, newLimit: 20, studyDirection: 'front', seenVersion: null };
 });
 
 // ---- decks / cards ----
@@ -129,13 +143,36 @@ export function createDeck(userId: string, name: string): WireDeck {
   const color = DECK_COLORS[row.n % DECK_COLORS.length];
   const id = randomUUID();
   db.prepare('INSERT INTO decks (id, user_id, name, color, pos) VALUES (?, ?, ?, ?, ?)').run(id, userId, name, color, row.n);
-  return { id, name, color, cards: [] };
+  return { id, name, color, visibility: 'private', imported: false, fromUsername: null, newAvailable: 0, cards: [] };
 }
 
+// Cards in `sourceDeckId` that no card in `targetDeckId` was copied from — i.e. added upstream
+// since the import (or since the last pull).
+const NEW_FROM_SOURCE = `FROM cards o WHERE o.deck_id = ?
+  AND o.id NOT IN (SELECT source_card_id FROM cards WHERE deck_id = ? AND source_card_id IS NOT NULL)`;
+
 export function getDecks(userId: string): WireDeck[] {
-  const decks = db.prepare('SELECT id, name, color FROM decks WHERE user_id = ? ORDER BY pos').all(userId) as { id: string; name: string; color: string }[];
+  const decks = db
+    .prepare(
+      `SELECT d.id, d.name, d.color, d.visibility, d.forked_from,
+              (SELECT u.username FROM decks sd JOIN users u ON u.id = sd.user_id WHERE sd.id = d.forked_from) AS fromUsername
+       FROM decks d WHERE d.user_id = ? ORDER BY d.pos`,
+    )
+    .all(userId) as { id: string; name: string; color: string; visibility: DeckVisibility; forked_from: string | null; fromUsername: string | null }[];
   const cardsStmt = db.prepare('SELECT * FROM cards WHERE deck_id = ? ORDER BY created_at');
-  return decks.map((d) => ({ ...d, cards: (cardsStmt.all(d.id) as CardRow[]).map(rowToWire) }));
+  const newStmt = db.prepare(
+    `SELECT COUNT(*) AS n ${NEW_FROM_SOURCE} AND EXISTS (SELECT 1 FROM decks WHERE id = o.deck_id AND visibility = 'public')`,
+  );
+  return decks.map((d) => ({
+    id: d.id,
+    name: d.name,
+    color: d.color,
+    visibility: d.visibility,
+    imported: d.forked_from !== null,
+    fromUsername: d.fromUsername,
+    newAvailable: d.forked_from ? (newStmt.get(d.forked_from, d.id) as { n: number }).n : 0,
+    cards: (cardsStmt.all(d.id) as CardRow[]).map(rowToWire),
+  }));
 }
 
 export interface NewCard {
@@ -172,6 +209,110 @@ export function deleteDeck(userId: string, deckId: string): boolean {
   const info = db.prepare('DELETE FROM decks WHERE id = ? AND user_id = ?').run(deckId, userId);
   return info.changes > 0;
 }
+
+// ---- public deck sharing (Community) ----
+
+/** Flip a deck's Community visibility. Returns true if the deck belonged to the user. */
+export function setDeckVisibility(userId: string, deckId: string, visibility: DeckVisibility): boolean {
+  const info = db.prepare('UPDATE decks SET visibility = ? WHERE id = ? AND user_id = ?').run(visibility, deckId, userId);
+  return info.changes > 0;
+}
+
+export interface CommunityDeck {
+  id: string;
+  name: string;
+  color: string;
+  author: string;
+  cardCount: number;
+  added: boolean; // the viewer already imported this deck
+}
+
+/** The Community catalog: other users' public decks (hidden while empty — nothing to copy yet). */
+export function listPublicDecks(userId: string): CommunityDeck[] {
+  const rows = db
+    .prepare(
+      `SELECT d.id, d.name, d.color, u.username AS author,
+              (SELECT COUNT(*) FROM cards WHERE deck_id = d.id) AS cardCount,
+              EXISTS (SELECT 1 FROM decks WHERE user_id = ? AND forked_from = d.id) AS added
+       FROM decks d JOIN users u ON u.id = d.user_id
+       WHERE d.visibility = 'public' AND d.user_id != ?
+         AND EXISTS (SELECT 1 FROM cards WHERE deck_id = d.id)
+       ORDER BY u.username, d.pos`,
+    )
+    .all(userId, userId) as (Omit<CommunityDeck, 'added'> & { added: number })[];
+  return rows.map((r) => ({ ...r, added: !!r.added }));
+}
+
+export interface CommunityCardPreview {
+  front: string;
+  back: string;
+  example: string | null;
+  type: CardType;
+}
+export interface CommunityDeckDetail {
+  id: string;
+  name: string;
+  color: string;
+  author: string;
+  cards: CommunityCardPreview[];
+}
+
+/** Read-only preview of a public deck: content only — never scheduling state. */
+export function getPublicDeckCards(deckId: string): CommunityDeckDetail | null {
+  const deck = db
+    .prepare(
+      `SELECT d.id, d.name, d.color, u.username AS author
+       FROM decks d JOIN users u ON u.id = d.user_id
+       WHERE d.id = ? AND d.visibility = 'public'`,
+    )
+    .get(deckId) as Omit<CommunityDeckDetail, 'cards'> | undefined;
+  if (!deck) return null;
+  const cards = db.prepare('SELECT front, back, example, type FROM cards WHERE deck_id = ? ORDER BY created_at').all(deckId) as CommunityCardPreview[];
+  return { ...deck, cards };
+}
+
+// Copy every source card the target deck doesn't have yet, with fresh FSRS state (a copy is a
+// new note for *this* user's memory) and source_card_id provenance. Returns the copies.
+function copyMissingCards(targetDeckId: string, sourceDeckId: string): WireCard[] {
+  const missing = db.prepare(`SELECT o.* ${NEW_FROM_SOURCE} ORDER BY o.created_at`).all(sourceDeckId, targetDeckId) as (CardRow & { id: string })[];
+  const now = Date.now();
+  const insert = db.prepare(
+    'INSERT INTO cards (id, deck_id, front, back, example, type, mnemonic, image, created_at, stability, difficulty, state, step, due, last_review, source_card_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  );
+  const select = db.prepare('SELECT * FROM cards WHERE id = ?');
+  return missing.map((c) => {
+    const fresh = scheduler.newCard(new Date(now));
+    const id = randomUUID();
+    insert.run(id, targetDeckId, c.front, c.back, c.example, c.type, c.mnemonic, c.image, now, fresh.stability, fresh.difficulty, fresh.state, fresh.step, fresh.due.getTime(), null, c.id);
+    return rowToWire(select.get(id) as CardRow);
+  });
+}
+
+/** Copy a public deck (content only) into the user's account. Null if it isn't importable. */
+export const importDeck = db.transaction((userId: string, sourceDeckId: string): WireDeck | null => {
+  const src = db
+    .prepare(
+      `SELECT d.name, u.username AS author FROM decks d JOIN users u ON u.id = d.user_id
+       WHERE d.id = ? AND d.visibility = 'public' AND d.user_id != ?`,
+    )
+    .get(sourceDeckId, userId) as { name: string; author: string } | undefined;
+  if (!src) return null;
+  if (db.prepare('SELECT 1 FROM decks WHERE user_id = ? AND forked_from = ?').get(userId, sourceDeckId)) return null; // already imported
+  const row = db.prepare('SELECT COUNT(*) AS n FROM decks WHERE user_id = ?').get(userId) as { n: number };
+  const color = DECK_COLORS[row.n % DECK_COLORS.length];
+  const id = randomUUID();
+  db.prepare('INSERT INTO decks (id, user_id, name, color, pos, forked_from) VALUES (?, ?, ?, ?, ?, ?)').run(id, userId, src.name, color, row.n, sourceDeckId);
+  const cards = copyMissingCards(id, sourceDeckId);
+  return { id, name: src.name, color, visibility: 'private', imported: true, fromUsername: src.author, newAvailable: 0, cards };
+});
+
+/** Pull cards added to the source deck since import. Null if the deck isn't an import of a (still) public deck. */
+export const pullNewCards = db.transaction((userId: string, deckId: string): WireCard[] | null => {
+  const deck = db.prepare('SELECT forked_from FROM decks WHERE id = ? AND user_id = ?').get(deckId, userId) as { forked_from: string | null } | undefined;
+  if (!deck?.forked_from) return null;
+  if (!db.prepare("SELECT 1 FROM decks WHERE id = ? AND visibility = 'public'").get(deck.forked_from)) return null;
+  return copyMissingCards(deckId, deck.forked_from);
+});
 
 /** Run FSRS for a grade, persist the new memory state, log the review, award XP. */
 export const answerCard = db.transaction((userId: string, cardId: string, rating: Rating): { card: WireCard; user: PublicUser } | null => {
