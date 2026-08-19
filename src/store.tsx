@@ -121,6 +121,7 @@ export interface AppActions {
   setStudyDirection(d: StudyDirection): void;
 
   createDeck(name: string): void;
+  updateCard(cardId: string, fields: { front: string; back: string; mnemonic?: string; image?: string }): Promise<boolean>;
   deleteCard(cardId: string): void;
   deleteDeck(deckId: string): void;
 
@@ -437,7 +438,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
 
       loadHardest: () => {
-        api.hardest().then((hardest) => patch({ hardest })).catch(() => {});
+        // 200 covers Browse's "Most missed" sort + badges; Stats shows the top 10.
+        api.hardest(200).then((hardest) => patch({ hardest })).catch(() => {});
       },
 
       loadCommunity: () => {
@@ -514,6 +516,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
           },
           (e) => showToast((e as Error).message),
         );
+      },
+      updateCard: async (cardId, fields) => {
+        try {
+          const updated = await api.updateCard(cardId, fields);
+          setState((s) => ({ ...s, decks: s.decks.map((d) => ({ ...d, cards: d.cards.map((c) => (c.id === cardId ? updated : c)) })) }));
+          showToast('Card updated');
+          return true;
+        } catch (e) {
+          showToast((e as Error).message);
+          return false;
+        }
       },
       deleteCard: (cardId) => {
         const prev = stateRef.current.decks;

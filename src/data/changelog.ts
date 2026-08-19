@@ -15,6 +15,19 @@ export interface ChangelogRelease {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: '2.6',
+    items: [
+      {
+        title: 'Edit cards anywhere',
+        body: 'Fix a typo the moment you spot it: every card in Browse has an Edit button, and the study card has a pencil in its corner. Edits never touch your review schedule.',
+      },
+      {
+        title: 'Sort Browse by trouble',
+        body: 'A new "Most missed" sort puts your hardest cards first, and cards you miss often carry a warning badge — hover it for your miss count.',
+      },
+    ],
+  },
+  {
     version: '2.5',
     items: [
       {
@@ -28,23 +41,6 @@ export const CHANGELOG: ChangelogRelease[] = [
       {
         title: 'Numbers on hover',
         body: 'Hover any chart to see the exact numbers for that day.',
-      },
-    ],
-  },
-  {
-    version: '2.4',
-    items: [
-      {
-        title: 'Share decks with anyone',
-        body: 'Make a deck public with the padlock and it shows up under Community for everyone on this server. They get their own copy, and can pull new cards you add later.',
-      },
-      {
-        title: 'Fill-in-the-blank cards',
-        body: 'A new card type for learning words in context. Type a sentence with ___ where the answer goes.',
-      },
-      {
-        title: 'Focus drills for trouble words',
-        body: 'Stats now ranks the cards you miss most. Drill them off-schedule without touching your review dates.',
       },
     ],
   },

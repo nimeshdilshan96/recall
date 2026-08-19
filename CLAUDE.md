@@ -65,9 +65,16 @@ Three rolling **7-day** gauges on the Stats screen, computed in `repo.ts:getRete
   mature count. `idx_reviewlog_card` supports this and the retention subqueries.
 - `/api/history` returns **366 trailing days** (covers Jan 1 for the year-view Calendar); the
   streak and reviews chart read the array's tail, so the length is safe to grow but not shrink.
-- **UI conventions**: `class="tip"` + `data-tip` = the CSS-only tooltip (index.css); `.chart-col`/
-  `.chart-marker` add the line-chart hover dot. The "What's new" dialog content lives in
-  `src/data/changelog.ts` — bump `version` to announce; dismissal stores `users.seen_version`.
+- **UI conventions**: `class="tip"` + `data-tip` = the CSS-only tooltip (index.css); add `tip-left`
+  near a clipping right edge (right-aligns the pill). `.chart-col`/`.chart-marker` add the
+  line-chart hover dot. The "What's new" dialog content lives in `src/data/changelog.ts` — bump
+  `version` to announce; dismissal stores `users.seen_version`.
+- **Card editing**: Browse rows + the Study card's corner pencil open `components/EditCardDialog.tsx`
+  (front/back/mnemonic/image → `PATCH /api/cards/:id`; FSRS state and review_log untouched).
+  Modals must render via `createPortal` — screen wrappers keep a transform from their entry
+  animation (breaks `position: fixed`), and the accent CSS vars live on the app root, so the
+  dialog re-applies `accentVars(state.accent)` on its backdrop. Browse's "Most missed" sort +
+  ▲ badge reuse `GET /api/hardest?limit=…` (store fetches 200; Stats slices its top 10).
 - **Responsive patterns**: inline styles can't use media queries, so responsive values go through
   CSS variables in index.css (e.g. `--study-*` shrink under `@media (max-height: 580px)` so the
   Study card fits with the mobile keyboard open). Home renders deck rows in two layouts via

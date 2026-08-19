@@ -196,6 +196,15 @@ export function addCard(userId: string, deckId: string, c: NewCard): WireCard | 
   return rowToWire(db.prepare('SELECT * FROM cards WHERE id = ?').get(id) as CardRow);
 }
 
+/** Edit a card's note content. FSRS memory state and the review log are untouched. */
+export function updateCard(userId: string, cardId: string, c: { front: string; back: string; mnemonic: string | null; image: string | null }): WireCard | null {
+  const info = db
+    .prepare('UPDATE cards SET front = ?, back = ?, mnemonic = ?, image = ? WHERE id = ? AND deck_id IN (SELECT id FROM decks WHERE user_id = ?)')
+    .run(c.front, c.back, c.mnemonic, c.image, cardId, userId);
+  if (info.changes === 0) return null;
+  return rowToWire(db.prepare('SELECT * FROM cards WHERE id = ?').get(cardId) as CardRow);
+}
+
 /** Delete a single card (its review_log rows cascade). Returns true if it belonged to the user. */
 export function deleteCard(userId: string, cardId: string): boolean {
   const info = db

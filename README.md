@@ -114,7 +114,25 @@ covered — the streak and the reviews chart read from the tail of the same arra
 
 **Chart tooltips:** every chart (and the deck padlock) uses one CSS-only tooltip: put
 `class="tip"` + `data-tip="…"` on an element (`index.css`). The line chart adds a per-day hover
-marker + guide line via `.chart-col`/`.chart-marker`.
+marker + guide line via `.chart-col`/`.chart-marker`. Triggers near a clipping right edge
+(`overflow: hidden` cards) add `tip-left` to right-align the pill with the trigger.
+
+## Browsing & editing cards
+
+**Browse** lists every card with deck filter chips, a search box, and a **sort**: *Default*
+(deck order) or *Most missed* — ranked by each card's Again-rate from `review_log`
+(`GET /api/hardest?limit=…`, same source as the Stats "Hardest cards" list). Cards missed on
+≥ 30% of reviews carry a warning badge; hover it for the exact miss count.
+
+**Editing.** Every Browse row has an Edit button, and the Study card has a pencil in its top-right
+corner — both open the same card-style popup (`components/EditCardDialog.tsx`) for front / back /
+mnemonic / image URL, saved via `PATCH /api/cards/:id`. Edits change **note content only**: the
+FSRS memory state, the review log, and the study queue are untouched, so fixing a typo never
+reschedules a card. (For shared decks, content is copied at import/pull time — see
+[Sharing decks](#sharing-decks-community) — so edits don't propagate to existing copies.)
+The dialog renders through a React portal: screen wrappers keep a CSS transform from their entry
+animation (which would re-anchor `position: fixed`), and since the accent CSS variables live on
+the app root, `EditCardDialog` re-applies them on its backdrop.
 
 ## Announcing releases (the "What's new" dialog)
 

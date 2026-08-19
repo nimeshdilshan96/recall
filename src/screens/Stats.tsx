@@ -419,7 +419,7 @@ export function Stats() {
             <div style={{ fontSize: 12, color: '#afafaf' }}>The words you miss most, worst first</div>
           </div>
           <div>
-            {state.hardest.map((h, i) => {
+            {state.hardest.slice(0, 10).map((h, i) => {
               const front = h.front.replace('{{}}', '____');
               const leech = h.again >= 4;
               const rate = h.total ? h.again / h.total : 0;
@@ -448,7 +448,7 @@ export function Stats() {
             })}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 16 }}>
-            <button className="btn3d" onClick={() => actions.drillCards(state.hardest.map((h) => h.id))} style={{ padding: '12px 22px 14px', borderRadius: 14, fontSize: 13 }}>
+            <button className="btn3d" onClick={() => actions.drillCards(state.hardest.slice(0, 10).map((h) => h.id))} style={{ padding: '12px 22px 14px', borderRadius: 14, fontSize: 13 }}>
               Drill these words
             </button>
             <span style={{ fontSize: 12.5, color: '#afafaf' }}>Off-schedule — won't change your review dates</span>

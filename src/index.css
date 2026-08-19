@@ -114,6 +114,13 @@ input:focus {
   display: block;
   animation: tipIn 0.12s ease 0.15s both;
 }
+/* Right-aligned variant for triggers near a clipping right edge (overflow:hidden cards):
+   the pill's right edge lines up with the trigger instead of centering on it. */
+.tip-left::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
 @keyframes tipIn {
   from { opacity: 0; margin-top: -3px; }
   to { opacity: 1; margin-top: 0; }

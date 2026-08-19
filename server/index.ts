@@ -106,6 +106,19 @@ app.post('/api/cards', async (req, reply) => {
   return { card };
 });
 
+app.patch('/api/cards/:id', async (req, reply) => {
+  const id = requireUser(req, reply);
+  if (!id) return;
+  const cardId = (req.params as { id: string }).id;
+  const body = (req.body ?? {}) as { front?: string; back?: string; mnemonic?: string; image?: string };
+  const f = (body.front ?? '').trim();
+  const b = (body.back ?? '').trim();
+  if (!f || !b) return reply.code(400).send({ error: 'front and back are required' });
+  const card = repo.updateCard(id, cardId, { front: f, back: b, mnemonic: (body.mnemonic ?? '').trim() || null, image: (body.image ?? '').trim() || null });
+  if (!card) return reply.code(404).send({ error: 'Card not found' });
+  return { card };
+});
+
 app.delete('/api/cards/:id', async (req, reply) => {
   const id = requireUser(req, reply);
   if (!id) return;
@@ -218,7 +231,8 @@ app.get('/api/mature-history', async (req, reply) => {
 app.get('/api/hardest', async (req, reply) => {
   const id = requireUser(req, reply);
   if (!id) return;
-  return { cards: repo.getHardest(id, 10) };
+  const limit = Math.min(Math.max(Number((req.query as { limit?: string }).limit) || 10, 1), 500);
+  return { cards: repo.getHardest(id, limit) };
 });
 
 app.get('/api/leaderboard', async (req, reply) => {

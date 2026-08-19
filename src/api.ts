@@ -115,6 +115,8 @@ export const api = {
   createDeck: async (name: string): Promise<Deck> => reviveDeck((await req<{ deck: WireDeck }>('POST', '/api/decks', { name })).deck),
   updateSettings: async (opts: { newLimit?: number; studyDirection?: StudyDirection; seenVersion?: string }): Promise<PublicUser> =>
     (await req<{ user: PublicUser }>('PATCH', '/api/settings', opts)).user,
+  updateCard: async (cardId: string, fields: { front: string; back: string; mnemonic?: string; image?: string }): Promise<RecallCard> =>
+    reviveCard((await req<{ card: WireCard }>('PATCH', `/api/cards/${cardId}`, fields)).card),
   deleteCard: (cardId: string) => req<{ ok: true }>('DELETE', `/api/cards/${cardId}`),
   deleteDeck: (deckId: string) => req<{ ok: true }>('DELETE', `/api/decks/${deckId}`),
 
@@ -127,7 +129,7 @@ export const api = {
   matureHistory: () => req<{ counts: number[]; firstEventAt: number | null }>('GET', '/api/mature-history'),
   today: () => req<{ reviewDone: number; newDone: number }>('GET', '/api/today'),
   retention: (days = 7) => req<Retention>('GET', `/api/retention?days=${days}`),
-  hardest: async (): Promise<HardestCard[]> => (await req<{ cards: HardestCard[] }>('GET', '/api/hardest')).cards,
+  hardest: async (limit = 10): Promise<HardestCard[]> => (await req<{ cards: HardestCard[] }>('GET', `/api/hardest?limit=${limit}`)).cards,
   history: () => req<{ reviews: number[]; added: number[] }>('GET', '/api/history'),
   leaderboard: async (): Promise<{ username: string; xp: number }[]> => (await req<{ rows: { username: string; xp: number }[] }>('GET', '/api/leaderboard')).rows,
 };
