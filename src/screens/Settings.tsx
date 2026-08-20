@@ -1,9 +1,15 @@
-import { useApp, type StudyDirection } from '../store.tsx';
+import { useApp, type StudyDirection, type NewOrder } from '../store.tsx';
 
 const DIRECTIONS: { value: StudyDirection; label: string; hint: string }[] = [
   { value: 'front', label: 'Front → Back', hint: 'See the prompt, recall the answer' },
   { value: 'back', label: 'Back → Front', hint: 'See the answer, recall the prompt' },
   { value: 'both', label: 'Both ways', hint: 'Randomly drills each card in both directions' },
+];
+
+const NEW_ORDERS: { value: NewOrder; label: string; hint: string }[] = [
+  { value: 'oldest', label: 'Oldest first', hint: 'In the order you added them (default)' },
+  { value: 'newest', label: 'Newest first', hint: 'Your most recently added cards come first' },
+  { value: 'random', label: 'Random', hint: 'A random pick from all unseen cards, each session' },
 ];
 
 export function Settings() {
@@ -29,9 +35,9 @@ export function Settings() {
         <div style={heading}>New cards per day</div>
         <div style={sub}>How many new cards a deck introduces per study session. Lower = lighter daily review load.</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          {stepBtn('−', () => step(-5))}
+          {stepBtn('−', () => step(-1))}
           <div style={{ minWidth: 64, textAlign: 'center', fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600, color: '#4b4b4b' }}>{state.newLimit}</div>
-          {stepBtn('+', () => step(5))}
+          {stepBtn('+', () => step(1))}
           <div style={{ display: 'flex', gap: 6, marginLeft: 10 }}>
             {[10, 20, 30, 50].map((n) => (
               <button
@@ -52,6 +58,39 @@ export function Settings() {
               </button>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div style={card}>
+        <div style={heading}>New card order</div>
+        <div style={sub}>Which unseen cards a study session introduces first.</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {NEW_ORDERS.map((o) => {
+            const sel = state.newOrder === o.value;
+            return (
+              <button
+                key={o.value}
+                onClick={() => actions.setNewOrder(o.value)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  textAlign: 'left',
+                  border: `2px solid ${sel ? 'var(--accent)' : 'oklch(0.9 0 0)'}`,
+                  background: sel ? 'var(--accent-tint)' : 'oklch(0.99 0 0)',
+                  cursor: 'pointer',
+                  padding: '12px 14px',
+                  borderRadius: 13,
+                }}
+              >
+                <span style={{ width: 18, height: 18, borderRadius: '50%', flexShrink: 0, border: `2px solid ${sel ? 'var(--accent)' : 'oklch(0.8 0 0)'}`, background: sel ? 'var(--accent)' : 'transparent', boxShadow: sel ? 'inset 0 0 0 3px oklch(0.99 0 0)' : 'none' }} />
+                <span>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: sel ? 'var(--accent)' : '#4b4b4b' }}>{o.label}</div>
+                  <div style={{ fontSize: 12.5, color: '#afafaf', marginTop: 1 }}>{o.hint}</div>
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

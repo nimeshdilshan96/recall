@@ -199,8 +199,13 @@ app.get('/api/history', async (req, reply) => {
 app.patch('/api/settings', async (req, reply) => {
   const id = requireUser(req, reply);
   if (!id) return;
-  const { newLimit, studyDirection, seenVersion } = (req.body ?? {}) as { newLimit?: number; studyDirection?: 'front' | 'back' | 'both'; seenVersion?: string };
-  const user = repo.updateSettings(id, { newLimit, studyDirection, seenVersion });
+  const { newLimit, studyDirection, newOrder, seenVersion } = (req.body ?? {}) as {
+    newLimit?: number;
+    studyDirection?: 'front' | 'back' | 'both';
+    newOrder?: 'oldest' | 'newest' | 'random';
+    seenVersion?: string;
+  };
+  const user = repo.updateSettings(id, { newLimit, studyDirection, newOrder, seenVersion });
   if (!user) return reply.code(404).send({ error: 'Not found' });
   return { user };
 });

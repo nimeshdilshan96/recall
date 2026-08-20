@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useApp } from '../store.tsx';
-import { totals } from '../selectors.ts';
+import { totals, isNew } from '../selectors.ts';
 import { EditCardDialog } from '../components/EditCardDialog.tsx';
 
-type SortMode = 'default' | 'missed';
+type SortMode = 'default' | 'missed' | 'new';
 
 interface Row {
   id: string;
@@ -13,6 +13,7 @@ interface Row {
   image: string;
   deckId: string;
   deck: string;
+  isNew: boolean;
 }
 
 export function Browse() {
@@ -33,7 +34,7 @@ export function Browse() {
   const allRows: Row[] = useMemo(
     () =>
       state.decks.flatMap((d) =>
-        d.cards.map((c) => ({ id: c.id, front: c.front, back: c.back, mnemonic: c.mnemonic ?? '', image: c.image ?? '', deckId: d.id, deck: d.name.split(' — ')[0] })),
+        d.cards.map((c) => ({ id: c.id, front: c.front, back: c.back, mnemonic: c.mnemonic ?? '', image: c.image ?? '', deckId: d.id, deck: d.name.split(' — ')[0], isNew: isNew(c) })),
       ),
     [state.decks],
   );
@@ -51,6 +52,9 @@ export function Browse() {
       return m ? m.again / m.total : -1;
     };
     rows = rows.slice().sort((a, b) => rate(b.id) - rate(a.id));
+  } else if (sort === 'new') {
+    // Unstudied cards first; within each group the default order is kept (stable sort).
+    rows = rows.slice().sort((a, b) => Number(b.isNew) - Number(a.isNew));
   }
 
   const filtering = q.length > 0 || deckFilter !== 'all';
@@ -93,6 +97,7 @@ export function Browse() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
         {chip('default', sort === 'default', 'Default', () => setSort('default'))}
         {chip('missed', sort === 'missed', 'Most missed', () => setSort('missed'))}
+        {chip('new', sort === 'new', 'New first', () => setSort('new'))}
       </div>
 
       <div style={{ position: 'relative', marginBottom: 22 }}>
@@ -127,6 +132,11 @@ export function Browse() {
               <div key={r.id} style={{ display: 'flex', alignItems: 'center', padding: '12px 18px', borderBottom: '1px solid oklch(0.93 0 0)', fontSize: 13.5 }}>
                 <span style={{ flex: 2, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: '#4b4b4b', minWidth: 0, ...ellipsis }}>{r.front.replace('{{}}', '___')}</span>
+                  {r.isNew && (
+                    <span className="tip" data-tip="Not learned yet" style={{ flexShrink: 0, marginTop: 3, padding: '2px 7px', borderRadius: 999, background: 'var(--accent-tint)', color: 'var(--accent)', fontSize: 9.5, fontWeight: 800, letterSpacing: '0.06em' }}>
+                      NEW
+                    </span>
+                  )}
                   {trouble && (
                     <span className="tip" data-tip={`Missed ${m.again} of ${m.total} reviews`} style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 5, background: '#ffeccc', color: '#d97e00', fontSize: 9 }}>
                       ▲

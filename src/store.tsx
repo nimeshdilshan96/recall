@@ -3,10 +3,10 @@ import { RecallScheduler, Rating, State } from './fsrs/recall-scheduler.ts';
 import type { Deck, DeckVisibility, RecallCard, CardType } from './data/types.ts';
 import { parseCloze } from './util/answer.ts';
 import { pickAccent } from './theme.ts';
-import { api, type StudyDirection, type PublicUser, type HardestCard, type Retention, type CommunityDeck, type CommunityDeckDetail } from './api.ts';
+import { api, type StudyDirection, type NewOrder, type PublicUser, type HardestCard, type Retention, type CommunityDeck, type CommunityDeckDetail } from './api.ts';
 import { CURRENT_VERSION } from './data/changelog.ts';
 
-export type { StudyDirection };
+export type { StudyDirection, NewOrder };
 export type { CommunityDeck, CommunityDeckDetail };
 export type Screen = 'home' | 'study' | 'add' | 'community' | 'league' | 'stats' | 'browse' | 'settings';
 export type AuthMode = 'login' | 'register';
@@ -71,6 +71,7 @@ export interface AppState {
 
   newLimit: number;
   studyDirection: StudyDirection;
+  newOrder: NewOrder;
 
   xp: number;
   gems: number;
@@ -119,6 +120,7 @@ export interface AppActions {
 
   setNewLimit(n: number): void;
   setStudyDirection(d: StudyDirection): void;
+  setNewOrder(o: NewOrder): void;
 
   createDeck(name: string): void;
   updateCard(cardId: string, fields: { front: string; back: string; mnemonic?: string; image?: string }): Promise<boolean>;
@@ -211,6 +213,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     communityBusy: false,
     newLimit: 20,
     studyDirection: 'front',
+    newOrder: 'oldest',
     xp: 0,
     gems: 0,
     menuOpen: false,
@@ -241,6 +244,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       gems: user.gems,
       newLimit: user.newLimit,
       studyDirection: user.studyDirection,
+      newOrder: user.newOrder,
       showWhatsNew: user.seenVersion !== CURRENT_VERSION,
       decks,
       history: hist.reviews,
@@ -311,8 +315,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const s = stateRef.current;
         const deck = s.decks.find((d) => d.id === deckId);
         if (!deck) return;
+        // buildQueue takes the first `newLimit` unseen cards in array order (cards arrive
+        // oldest-first), so reordering the unseen ones here is what picks which get introduced.
+        let items = deck.cards.map((c) => ({ card: c.fsrs, id: c.id }));
+        if (s.newOrder !== 'oldest') {
+          const seen = items.filter((x) => !sched.isNew(x.card));
+          const neu = items.filter((x) => sched.isNew(x.card));
+          items = seen.concat(s.newOrder === 'newest' ? neu.reverse() : shuffle(neu));
+        }
         const refs: CardRef[] = sched
-          .buildQueue(deck.cards.map((c) => ({ card: c.fsrs, id: c.id })), new Date(), s.newLimit)
+          .buildQueue(items, new Date(), s.newLimit)
           .map((x) => ({ deckId, cardId: x.id, reversed: dirFor(s.studyDirection) }));
         if (refs.length === 0) {
           showToast('No cards due in this deck');
@@ -500,6 +512,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setNewLimit: (n) => {
         patch({ newLimit: n }); // optimistic
         api.updateSettings({ newLimit: n }).then((user) => patch({ newLimit: user.newLimit })).catch((e) => showToast((e as Error).message));
+      },
+      setNewOrder: (o) => {
+        patch({ newOrder: o });
+        api.updateSettings({ newOrder: o }).then((user) => patch({ newOrder: user.newOrder })).catch((e) => showToast((e as Error).message));
       },
       setStudyDirection: (d) => {
         patch({ studyDirection: d });

@@ -7,6 +7,8 @@ const scheduler = new RecallScheduler(); // FSRS-6 defaults; authoritative serve
 
 // ---- wire types (dates as epoch ms so JSON round-trips cleanly) ----
 export type StudyDirection = 'front' | 'back' | 'both';
+/** Which unseen cards a study session introduces first. */
+export type NewOrder = 'oldest' | 'newest' | 'random';
 
 export type CardType = 'basic' | 'cloze';
 
@@ -43,6 +45,7 @@ export interface PublicUser {
   gems: number;
   newLimit: number;
   studyDirection: StudyDirection;
+  newOrder: NewOrder;
   /** Last "What's new" version the user dismissed (null = never). */
   seenVersion: string | null;
 }
@@ -91,7 +94,7 @@ function toCard(r: CardRow): Card {
 
 // ---- users ----
 
-const USER_COLS = 'id, username, xp, gems, new_limit AS newLimit, study_direction AS studyDirection, seen_version AS seenVersion';
+const USER_COLS = 'id, username, xp, gems, new_limit AS newLimit, study_direction AS studyDirection, new_order AS newOrder, seen_version AS seenVersion';
 
 export function getUserByUsername(username: string): (PublicUser & { password_hash: string }) | undefined {
   return db.prepare(`SELECT ${USER_COLS}, password_hash FROM users WHERE username = ?`).get(username) as any;
@@ -102,13 +105,16 @@ export function getUser(id: string): PublicUser | undefined {
 }
 
 /** Update a user's study settings. Returns the updated public user. */
-export function updateSettings(userId: string, opts: { newLimit?: number; studyDirection?: StudyDirection; seenVersion?: string }): PublicUser | undefined {
+export function updateSettings(userId: string, opts: { newLimit?: number; studyDirection?: StudyDirection; newOrder?: NewOrder; seenVersion?: string }): PublicUser | undefined {
   if (typeof opts.newLimit === 'number') {
     const n = Math.max(0, Math.min(999, Math.round(opts.newLimit)));
     db.prepare('UPDATE users SET new_limit = ? WHERE id = ?').run(n, userId);
   }
   if (opts.studyDirection && ['front', 'back', 'both'].includes(opts.studyDirection)) {
     db.prepare('UPDATE users SET study_direction = ? WHERE id = ?').run(opts.studyDirection, userId);
+  }
+  if (opts.newOrder && ['oldest', 'newest', 'random'].includes(opts.newOrder)) {
+    db.prepare('UPDATE users SET new_order = ? WHERE id = ?').run(opts.newOrder, userId);
   }
   if (typeof opts.seenVersion === 'string' && opts.seenVersion.length <= 20) {
     db.prepare('UPDATE users SET seen_version = ? WHERE id = ?').run(opts.seenVersion, userId);
@@ -122,7 +128,7 @@ export const createUser = db.transaction((username: string, password: string): P
   const now = Date.now();
   db.prepare('INSERT INTO users (id, username, password_hash, xp, gems, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(id, username, hashPassword(password), 0, 500, now);
 
-  return { id, username, xp: 0, gems: 500, newLimit: 20, studyDirection: 'front', seenVersion: null };
+  return { id, username, xp: 0, gems: 500, newLimit: 20, studyDirection: 'front', newOrder: 'oldest', seenVersion: null };
 });
 
 // ---- decks / cards ----

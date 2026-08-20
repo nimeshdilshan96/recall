@@ -3,6 +3,8 @@ import type { Deck, DeckVisibility, RecallCard, CardType } from './data/types.ts
 
 // Wire format from the server: dates are epoch ms so JSON round-trips cleanly.
 export type StudyDirection = 'front' | 'back' | 'both';
+/** Which unseen cards a study session introduces first. */
+export type NewOrder = 'oldest' | 'newest' | 'random';
 
 export interface HardestCard {
   id: string;
@@ -58,6 +60,7 @@ export interface PublicUser {
   gems: number;
   newLimit: number;
   studyDirection: StudyDirection;
+  newOrder: NewOrder;
   seenVersion: string | null;
 }
 
@@ -113,7 +116,7 @@ export const api = {
   },
 
   createDeck: async (name: string): Promise<Deck> => reviveDeck((await req<{ deck: WireDeck }>('POST', '/api/decks', { name })).deck),
-  updateSettings: async (opts: { newLimit?: number; studyDirection?: StudyDirection; seenVersion?: string }): Promise<PublicUser> =>
+  updateSettings: async (opts: { newLimit?: number; studyDirection?: StudyDirection; newOrder?: NewOrder; seenVersion?: string }): Promise<PublicUser> =>
     (await req<{ user: PublicUser }>('PATCH', '/api/settings', opts)).user,
   updateCard: async (cardId: string, fields: { front: string; back: string; mnemonic?: string; image?: string }): Promise<RecallCard> =>
     reviveCard((await req<{ card: WireCard }>('PATCH', `/api/cards/${cardId}`, fields)).card),

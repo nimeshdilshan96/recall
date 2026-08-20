@@ -81,6 +81,7 @@ ensureColumn('cards', 'mnemonic', 'mnemonic TEXT');
 ensureColumn('cards', 'image', 'image TEXT');
 ensureColumn('users', 'new_limit', 'new_limit INTEGER NOT NULL DEFAULT 20');
 ensureColumn('users', 'study_direction', "study_direction TEXT NOT NULL DEFAULT 'front'");
+ensureColumn('users', 'new_order', "new_order TEXT NOT NULL DEFAULT 'oldest'"); // 'oldest' | 'newest' | 'random'
 // Last "What's new" version the user dismissed (null = never seen one; new users see the current one too).
 ensureColumn('users', 'seen_version', 'seen_version TEXT');
 // Snapshot the card's memory state as it was *going into* each review, so we can later
