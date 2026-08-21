@@ -1,13 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '../store.tsx';
-import { deckCounts, maturity, totals } from '../selectors.ts';
+import { deckCounts, totals } from '../selectors.ts';
 import { ConfirmDialog } from '../components/ConfirmDialog.tsx';
 import { PadlockIcon } from '../components/icons.tsx';
 import { useIsMobile } from '../hooks/useIsMobile.ts';
 import type { Deck } from '../data/types.ts';
-
-// Daily new-card target (Anki's default is 20/day).
-const NEW_TARGET = 20;
 
 export function Home() {
   const { state, actions } = useApp();
@@ -23,17 +20,24 @@ export function Home() {
   }, []);
 
   const { reviewDone, newDone } = state.today;
-  const mastered = state.decks.reduce((a, d) => a + d.cards.filter((c) => maturity(c) === 'mature').length, 0);
 
   // Progress = work done today ÷ (done today + still remaining), anchored to the review log.
   const reviewMax = reviewDone + t.due; // reviews done today + still due
-  const newMax = Math.max(1, Math.min(NEW_TARGET, newDone + t.neu)); // up to NEW_TARGET new cards available today
-  const masteredMax = Math.max(1, t.cards);
+  const newMax = Math.max(1, Math.min(state.newLimit, newDone + t.neu)); // the user's own new-cards-per-day setting is the target
 
   const goals = [
-    { label: 'Review due cards', color: '#58cc02', pct: reviewMax === 0 ? 0 : Math.round((reviewDone / reviewMax) * 100) },
-    { label: 'Learn new cards', color: '#1cb0f6', pct: Math.round((Math.min(newDone, newMax) / newMax) * 100) },
-    { label: 'Cards mastered', color: '#ff9600', pct: Math.round((mastered / masteredMax) * 100) },
+    {
+      label: 'Review due cards',
+      color: '#58cc02',
+      pct: reviewMax === 0 ? 0 : Math.round((reviewDone / reviewMax) * 100),
+      hint: reviewMax === 0 ? 'Nothing due today' : `${reviewDone} of ${reviewMax} reviews done`,
+    },
+    {
+      label: 'Learn new cards',
+      color: '#1cb0f6',
+      pct: Math.round((Math.min(newDone, newMax) / newMax) * 100),
+      hint: newDone + t.neu === 0 ? 'No new cards to learn' : `${Math.min(newDone, newMax)} of ${newMax} new cards learned`,
+    },
   ];
 
   return (
@@ -47,7 +51,8 @@ export function Home() {
               <div key={g.label} style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                 <span style={{ width: 26, height: 26, borderRadius: 8, flexShrink: 0, background: g.color, boxShadow: 'inset 0 -3px 0 rgba(0,0,0,0.18)' }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: '#4b4b4b', marginBottom: 7 }}>{g.label}</div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: '#4b4b4b', marginBottom: 1 }}>{g.label}</div>
+                  <div style={{ fontSize: 12.5, color: '#afafaf', marginBottom: 7 }}>{g.hint}</div>
                   <div style={{ position: 'relative', height: 18, background: 'oklch(0.9 0 0)', borderRadius: 20, overflow: 'hidden' }}>
                     <div style={{ height: '100%', width: `${pct}%`, background: '#ffc800', borderRadius: 20, boxShadow: 'inset 0 4px 0 rgba(255,255,255,0.45)' }} />
                   </div>
