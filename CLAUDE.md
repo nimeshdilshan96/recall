@@ -42,6 +42,15 @@ Open http://localhost:5173. The `data/recall.db` file is a normal SQLite DB you 
   the latter goes null when the source is deleted). Empty public decks are hidden from the catalog.
   Details in README "Sharing decks (Community)".
 
+- **Språkkafé (events tab)**: `server/deichman.ts` lazily syncs Norwegian language-café events from
+  deichman.no's undocumented public JSON API (at most hourly, one request, never throws — a failed
+  fetch serves the cache). Events upsert by Deichman's **stable event id** into `events` and are
+  **never deleted on sync**, so `event_rsvps` ('going' | 'cant' per user) always keep a valid parent.
+  The Norwegian-only filter needs both halves: a `norwegian`/`norsktrening` tag AND a
+  foreign-language blocklist (Deichman tags "Japansk språkkafé" with `norwegian` too). Window =
+  not-yet-over events starting within 7 days; the per-day filter is client state in `Sprakkafe.tsx`.
+  Details in README "Språkkafé (language-café events)".
+
 ## Stats & retention (details in README "Stats & retention")
 
 Three rolling **7-day** gauges on the Stats screen, computed in `repo.ts:getRetention`

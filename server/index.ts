@@ -7,6 +7,7 @@ import { existsSync } from 'node:fs';
 import { COOKIE_NAME, COOKIE_SECRET, verifyPassword } from './auth.ts';
 import { Rating } from '../src/fsrs/recall-scheduler.ts';
 import * as repo from './repo.ts';
+import { ensureEventsSynced } from './deichman.ts';
 
 const app = Fastify({ logger: true });
 await app.register(cookie, { secret: COOKIE_SECRET });
@@ -244,6 +245,27 @@ app.get('/api/leaderboard', async (req, reply) => {
   const id = requireUser(req, reply);
   if (!id) return;
   return { rows: repo.getLeaderboard() };
+});
+
+// ---- language-café events (cached from deichman.no) ----
+app.get('/api/events', async (req, reply) => {
+  const id = requireUser(req, reply);
+  if (!id) return;
+  await ensureEventsSynced(app.log); // lazy hourly refresh; serves the cache if Deichman is down
+  return { events: repo.getUpcomingEvents(id) };
+});
+
+app.post('/api/events/:id/rsvp', async (req, reply) => {
+  const id = requireUser(req, reply);
+  if (!id) return;
+  const eventId = (req.params as { id: string }).id;
+  const { status } = (req.body ?? {}) as { status?: string | null };
+  if (status !== 'going' && status !== 'cant' && status !== null) {
+    return reply.code(400).send({ error: "status must be 'going', 'cant', or null" });
+  }
+  const event = repo.setRsvp(id, eventId, status);
+  if (!event) return reply.code(404).send({ error: 'Event not found' });
+  return { event };
 });
 
 // ---- static SPA (production) ----

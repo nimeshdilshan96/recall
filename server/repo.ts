@@ -586,3 +586,110 @@ export function getHardest(userId: string, limit = 10): HardestCard[] {
 export function getLeaderboard(): { username: string; xp: number }[] {
   return db.prepare('SELECT username, xp FROM users ORDER BY xp DESC').all() as { username: string; xp: number }[];
 }
+
+// ---- language-café events (cached from deichman.no, see server/deichman.ts) ----
+
+export type RsvpStatus = 'going' | 'cant';
+
+/** A row in the local events cache, as written by the Deichman sync. */
+export interface EventRow {
+  id: string;
+  slug: string;
+  title: string;
+  library: string | null;
+  organizer: string | null;
+  ingress: string | null;
+  target_audience: string | null;
+  price: string | null;
+  start_time: number;
+  end_time: number;
+  cancelled: number;
+  last_seen_at: number;
+}
+
+export interface WireEvent {
+  id: string;
+  title: string;
+  library: string | null;
+  organizer: string | null;
+  ingress: string | null;
+  targetAudience: string | null;
+  price: string | null;
+  url: string; // deep link to the event on deichman.no
+  startTime: number; // epoch ms
+  endTime: number;
+  cancelled: boolean;
+  going: string[]; // usernames, RSVP order
+  cant: string[];
+  myStatus: RsvpStatus | null;
+}
+
+/** Upsert synced events by Deichman's stable id. Existing rows update in place; RSVPs are untouched. */
+export const upsertEvents = db.transaction((rows: EventRow[]) => {
+  const stmt = db.prepare(
+    `INSERT INTO events (id, slug, title, library, organizer, ingress, target_audience, price, start_time, end_time, cancelled, last_seen_at)
+     VALUES (@id, @slug, @title, @library, @organizer, @ingress, @target_audience, @price, @start_time, @end_time, @cancelled, @last_seen_at)
+     ON CONFLICT(id) DO UPDATE SET
+       slug = excluded.slug, title = excluded.title, library = excluded.library,
+       organizer = excluded.organizer, ingress = excluded.ingress,
+       target_audience = excluded.target_audience, price = excluded.price,
+       start_time = excluded.start_time, end_time = excluded.end_time,
+       cancelled = excluded.cancelled, last_seen_at = excluded.last_seen_at`,
+  );
+  for (const r of rows) stmt.run(r);
+});
+
+function eventToWire(r: EventRow, rsvps: { status: string; username: string }[], viewer: string | null): WireEvent {
+  return {
+    id: r.id,
+    title: r.title,
+    library: r.library,
+    organizer: r.organizer,
+    ingress: r.ingress,
+    targetAudience: r.target_audience,
+    price: r.price,
+    url: `https://deichman.no/event/${encodeURIComponent(r.slug)}`,
+    startTime: r.start_time,
+    endTime: r.end_time,
+    cancelled: !!r.cancelled,
+    going: rsvps.filter((x) => x.status === 'going').map((x) => x.username),
+    cant: rsvps.filter((x) => x.status === 'cant').map((x) => x.username),
+    myStatus: viewer && rsvps.find((x) => x.username === viewer) ? ((rsvps.find((x) => x.username === viewer)!.status) as RsvpStatus) : null,
+  };
+}
+
+const EVENT_RSVPS_SQL = `
+  SELECT r.event_id AS eventId, r.status, u.username
+  FROM event_rsvps r JOIN users u ON u.id = r.user_id
+  WHERE r.event_id IN (SELECT id FROM events WHERE end_time >= ?)
+  ORDER BY r.created_at`;
+
+/** Events not yet over that start within the next `days` days, with everyone's RSVPs attached. */
+export function getUpcomingEvents(userId: string, days = 7): WireEvent[] {
+  const now = Date.now();
+  const rows = db
+    .prepare('SELECT * FROM events WHERE end_time >= ? AND start_time < ? ORDER BY start_time')
+    .all(now, now + days * 86_400_000) as EventRow[];
+  const rsvps = db.prepare(EVENT_RSVPS_SQL).all(now) as { eventId: string; status: string; username: string }[];
+  const viewer = (db.prepare('SELECT username FROM users WHERE id = ?').get(userId) as { username: string } | undefined)?.username ?? null;
+  return rows.map((r) => eventToWire(r, rsvps.filter((x) => x.eventId === r.id), viewer));
+}
+
+/** Set (or clear, with null) the user's RSVP. Returns the refreshed event, or null if unknown. */
+export function setRsvp(userId: string, eventId: string, status: RsvpStatus | null): WireEvent | null {
+  const row = db.prepare('SELECT * FROM events WHERE id = ?').get(eventId) as EventRow | undefined;
+  if (!row) return null;
+  if (status === null) {
+    db.prepare('DELETE FROM event_rsvps WHERE event_id = ? AND user_id = ?').run(eventId, userId);
+  } else {
+    db.prepare(
+      `INSERT INTO event_rsvps (event_id, user_id, status, created_at) VALUES (?, ?, ?, ?)
+       ON CONFLICT(event_id, user_id) DO UPDATE SET status = excluded.status`,
+    ).run(eventId, userId, status, Date.now());
+  }
+  const rsvps = db
+    .prepare('SELECT r.status, u.username FROM event_rsvps r JOIN users u ON u.id = r.user_id WHERE r.event_id = ? ORDER BY r.created_at')
+    .all(eventId) as { status: string; username: string }[];
+  const viewer = (db.prepare('SELECT username FROM users WHERE id = ?').get(userId) as { username: string } | undefined)?.username ?? null;
+  return eventToWire(row, rsvps, viewer);
+}

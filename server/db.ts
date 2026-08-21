@@ -68,6 +68,33 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_reviewlog_user ON review_log(user_id, reviewed_at);
   CREATE INDEX IF NOT EXISTS idx_reviewlog_card ON review_log(card_id, reviewed_at);
+
+  -- Local cache of Norwegian language-café events pulled from deichman.no (see server/deichman.ts).
+  -- Rows are upserted by Deichman's own stable event id and never deleted on sync, so RSVPs
+  -- keep a valid parent even if an event vanishes upstream (it drops out once end_time passes).
+  CREATE TABLE IF NOT EXISTS events (
+    id           TEXT PRIMARY KEY,      -- Deichman's event id (also in their public URL)
+    slug         TEXT NOT NULL,         -- URL slug on deichman.no, for the deep link
+    title        TEXT NOT NULL,
+    library      TEXT,                  -- branch name, e.g. "Stovner"
+    organizer    TEXT,
+    ingress      TEXT,                  -- one-line description
+    target_audience TEXT,
+    price        TEXT,                  -- e.g. "Gratis" / "Krever billett"
+    start_time   INTEGER NOT NULL,      -- epoch ms
+    end_time     INTEGER NOT NULL,      -- epoch ms
+    cancelled    INTEGER NOT NULL DEFAULT 0,
+    last_seen_at INTEGER NOT NULL       -- last sync that included this event
+  );
+  CREATE INDEX IF NOT EXISTS idx_events_start ON events(start_time);
+
+  CREATE TABLE IF NOT EXISTS event_rsvps (
+    event_id   TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status     TEXT NOT NULL CHECK (status IN ('going', 'cant')),
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (event_id, user_id)
+  );
 `);
 
 // Migrations for databases created before these columns existed.

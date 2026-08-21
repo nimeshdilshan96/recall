@@ -64,6 +64,26 @@ export interface PublicUser {
   seenVersion: string | null;
 }
 
+export type RsvpStatus = 'going' | 'cant';
+
+/** A Norwegian language-café event, cached server-side from deichman.no, with everyone's RSVPs. */
+export interface CafeEvent {
+  id: string;
+  title: string;
+  library: string | null;
+  organizer: string | null;
+  ingress: string | null;
+  targetAudience: string | null;
+  price: string | null;
+  url: string;
+  startTime: number; // epoch ms
+  endTime: number;
+  cancelled: boolean;
+  going: string[]; // usernames
+  cant: string[];
+  myStatus: RsvpStatus | null;
+}
+
 export interface Retention {
   recalled: number;
   total: number;
@@ -135,4 +155,8 @@ export const api = {
   hardest: async (limit = 10): Promise<HardestCard[]> => (await req<{ cards: HardestCard[] }>('GET', `/api/hardest?limit=${limit}`)).cards,
   history: () => req<{ reviews: number[]; added: number[] }>('GET', '/api/history'),
   leaderboard: async (): Promise<{ username: string; xp: number }[]> => (await req<{ rows: { username: string; xp: number }[] }>('GET', '/api/leaderboard')).rows,
+
+  events: async (): Promise<CafeEvent[]> => (await req<{ events: CafeEvent[] }>('GET', '/api/events')).events,
+  rsvp: async (eventId: string, status: RsvpStatus | null): Promise<CafeEvent> =>
+    (await req<{ event: CafeEvent }>('POST', `/api/events/${eventId}/rsvp`, { status })).event,
 };

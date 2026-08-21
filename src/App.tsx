@@ -10,6 +10,7 @@ import { Study } from './screens/Study.tsx';
 import { Add } from './screens/Add.tsx';
 import { Browse } from './screens/Browse.tsx';
 import { Community } from './screens/Community.tsx';
+import { Sprakkafe } from './screens/Sprakkafe.tsx';
 import { League } from './screens/League.tsx';
 import { Stats } from './screens/Stats.tsx';
 import { Settings } from './screens/Settings.tsx';
@@ -53,6 +54,7 @@ export function App() {
       {state.screen === 'add' && <Add />}
       {state.screen === 'browse' && <Browse />}
       {state.screen === 'community' && <Community />}
+      {state.screen === 'sprakkafe' && <Sprakkafe />}
       {state.screen === 'league' && <League />}
       {state.screen === 'stats' && <Stats />}
       {state.screen === 'settings' && <Settings />}

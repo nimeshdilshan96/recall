@@ -54,6 +54,9 @@ cards (id, deck_id, front, back, example, type, mnemonic, image, created_at,
        source_card_id)              -- original card id if copied from a public deck
 review_log (id, card_id, user_id, rating, reviewed_at,
             stability_before, state_before)                    -- + memory state going INTO the grade
+events (id, slug, title, library, organizer, ingress, target_audience, price,
+        start_time, end_time, cancelled, last_seen_at)         -- language cafés cached from deichman.no
+event_rsvps (event_id, user_id, status, created_at)            -- 'going' | 'cant', PK (event_id, user_id)
 ```
 
 Grades run FSRS server-side and persist the updated `cards` row + a `review_log` entry in one
@@ -196,6 +199,42 @@ GET   /api/community                 catalog of other users' public decks (+ add
 GET   /api/community/:id             read-only card preview of one public deck
 POST  /api/community/:id/import      copy the deck into your account
 POST  /api/decks/:id/pull            pull new cards from the (still public) source
+```
+
+## Språkkafé (language-café events)
+
+The **Språkkafé** tab lists Norwegian language cafés around Oslo for the next 7 days, and lets
+everyone on the server RSVP — *Going* / *Can't go* — so you can see who else will be there
+(hover the "N going" count for names).
+
+**Where the data comes from.** `server/deichman.ts` pulls from deichman.no's (Oslo public
+library's) event API — public JSON, no auth, but **undocumented**, so the fetch layer is
+deliberately thin and defensive: missing fields are tolerated, and a failed fetch just serves the
+cached rows. The sync is lazy: `GET /api/events` refreshes at most **once per hour** (one request
+total, not per user), then always serves from SQLite.
+
+**Filtering.** Only *Norwegian* cafés are kept: the event must carry a `norwegian`/`norsktrening`
+tag **and** not match a foreign-language blocklist over title+tags. Both halves are needed —
+Deichman tags "Japansk språkkafé" with `norwegian` too. If a legit café ever goes missing, this
+filter (in `deichman.ts`) is the first place to look.
+
+**Why events live in a table.** RSVPs must reference something stable, and the browser can't call
+deichman.no directly (CORS). Events are **upserted by Deichman's own stable event id and never
+deleted on sync** — an event vanishing upstream keeps its RSVP rows and simply drops out of the
+window once `end_time` passes. Upstream changes (time moved, cancelled) update the row in place;
+RSVPs stay attached. Cancelled events show a struck-through title + badge rather than disappearing.
+
+**UI.** A 7-day strip (today outlined dark, the selected day filled accent, today preselected)
+filters the list per day; empty days stay tappable and show "No language cafés on this day."
+The "Showing … ✕" chip, tapping the pill again, or tapping another day clears/moves the filter —
+the filter is pure client state, the API always returns the full window. Times are shown in the
+browser's local timezone; titles deep-link to the event on deichman.no.
+
+The API surface (cookie-authenticated; SQL in `repo.ts`, sync in `deichman.ts`):
+
+```
+GET  /api/events            next-7-days events + everyone's RSVPs + your status (triggers lazy sync)
+POST /api/events/:id/rsvp   { status: 'going' | 'cant' | null }   null clears your RSVP
 ```
 
 ## Deploy

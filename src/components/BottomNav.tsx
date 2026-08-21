@@ -5,6 +5,7 @@ const NAV: { key: NavKey; label: string; screen: Screen }[] = [
   { key: 'home', label: 'Decks', screen: 'home' },
   { key: 'add', label: 'Add', screen: 'add' },
   { key: 'community', label: 'Community', screen: 'community' },
+  { key: 'sprakkafe', label: 'Språkkafé', screen: 'sprakkafe' },
   { key: 'league', label: 'League', screen: 'league' },
   { key: 'stats', label: 'Stats', screen: 'stats' },
   { key: 'browse', label: 'Browse', screen: 'browse' },

@@ -3,12 +3,12 @@ import { RecallScheduler, Rating, State } from './fsrs/recall-scheduler.ts';
 import type { Deck, DeckVisibility, RecallCard, CardType } from './data/types.ts';
 import { parseCloze } from './util/answer.ts';
 import { pickAccent } from './theme.ts';
-import { api, type StudyDirection, type NewOrder, type PublicUser, type HardestCard, type Retention, type CommunityDeck, type CommunityDeckDetail } from './api.ts';
+import { api, type StudyDirection, type NewOrder, type PublicUser, type HardestCard, type Retention, type CommunityDeck, type CommunityDeckDetail, type CafeEvent, type RsvpStatus } from './api.ts';
 import { CURRENT_VERSION } from './data/changelog.ts';
 
 export type { StudyDirection, NewOrder };
-export type { CommunityDeck, CommunityDeckDetail };
-export type Screen = 'home' | 'study' | 'add' | 'community' | 'league' | 'stats' | 'browse' | 'settings';
+export type { CommunityDeck, CommunityDeckDetail, CafeEvent, RsvpStatus };
+export type Screen = 'home' | 'study' | 'add' | 'community' | 'sprakkafe' | 'league' | 'stats' | 'browse' | 'settings';
 export type AuthMode = 'login' | 'register';
 
 interface CardRef {
@@ -69,6 +69,9 @@ export interface AppState {
   communityPreview: CommunityDeckDetail | null;
   communityBusy: boolean; // an import is in flight
 
+  events: CafeEvent[]; // upcoming language cafés (next 7 days), with everyone's RSVPs
+  eventsLoaded: boolean; // false until the first /api/events response (drives the loading state)
+
   newLimit: number;
   studyDirection: StudyDirection;
   newOrder: NewOrder;
@@ -110,6 +113,9 @@ export interface AppActions {
   addCard(): void;
 
   loadHardest(): void;
+
+  loadEvents(): void;
+  rsvpEvent(eventId: string, status: RsvpStatus | null): void;
 
   loadCommunity(): void;
   openCommunityDeck(deckId: string): void;
@@ -211,6 +217,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     community: [],
     communityPreview: null,
     communityBusy: false,
+    events: [],
+    eventsLoaded: false,
     newLimit: 20,
     studyDirection: 'front',
     newOrder: 'oldest',
@@ -452,6 +460,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
       loadHardest: () => {
         // 200 covers Browse's "Most missed" sort + badges; Stats shows the top 10.
         api.hardest(200).then((hardest) => patch({ hardest })).catch(() => {});
+      },
+
+      loadEvents: () => {
+        api
+          .events()
+          .then((events) => patch({ events, eventsLoaded: true }))
+          .catch((e) => {
+            patch({ eventsLoaded: true });
+            showToast((e as Error).message);
+          });
+      },
+      rsvpEvent: (eventId, status) => {
+        const s = stateRef.current;
+        const prev = s.events;
+        const me = s.profileName;
+        // Optimistic: move my name between the going/cant lists immediately.
+        setState((s2) => ({
+          ...s2,
+          events: s2.events.map((ev) => {
+            if (ev.id !== eventId) return ev;
+            const going = ev.going.filter((n) => n !== me);
+            const cant = ev.cant.filter((n) => n !== me);
+            if (status === 'going') going.push(me);
+            if (status === 'cant') cant.push(me);
+            return { ...ev, going, cant, myStatus: status };
+          }),
+        }));
+        api.rsvp(eventId, status).then(
+          (event) => setState((s2) => ({ ...s2, events: s2.events.map((ev) => (ev.id === eventId ? event : ev)) })),
+          (e) => {
+            setState((s2) => ({ ...s2, events: prev }));
+            showToast((e as Error).message);
+          },
+        );
       },
 
       loadCommunity: () => {

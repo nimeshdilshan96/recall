@@ -15,6 +15,15 @@ export interface ChangelogRelease {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: '2.8',
+    items: [
+      {
+        title: 'Språkkafé: practise for real',
+        body: 'A new tab lists Norwegian language cafés around Oslo for the next 7 days (from deichman.no). Say you’re going or can’t make it — and hover the "going" count to see who else will be there.',
+      },
+    ],
+  },
+  {
     version: '2.7',
     items: [
       {
@@ -28,19 +37,6 @@ export const CHANGELOG: ChangelogRelease[] = [
       {
         title: 'Daily goals, made honest',
         body: 'Goals now show your exact progress ("3 of 12 reviews done"), and the new-cards goal targets your own daily limit instead of a fixed 20.',
-      },
-    ],
-  },
-  {
-    version: '2.6',
-    items: [
-      {
-        title: 'Edit cards anywhere',
-        body: 'Fix a typo the moment you spot it: every card in Browse has an Edit button, and the study card has a pencil in its corner. Edits never touch your review schedule.',
-      },
-      {
-        title: 'Sort Browse by trouble',
-        body: 'A new "Most missed" sort puts your hardest cards first, and cards you miss often carry a warning badge — hover it for your miss count.',
       },
     ],
   },
