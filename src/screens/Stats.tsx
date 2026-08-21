@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useApp } from '../store.tsx';
 import { streakFrom, maturity } from '../selectors.ts';
+import { studyDayStart } from '../fsrs/recall-scheduler.ts';
 import { tokens } from '../theme.ts';
 
 const DAY = 86_400_000;
@@ -257,16 +258,13 @@ export function Stats() {
   // --- Future due (next 21 days) from real due dates ---
   const fdYoung = new Array(21).fill(0);
   const fdMature = new Array(21).fill(0);
-  // Bucket by calendar day (matching the day-granular isDue), not by 24h from this moment.
-  // round() (not floor) absorbs the ±1h a DST switch puts between two local midnights.
-  const startOfToday = new Date(now);
-  startOfToday.setHours(0, 0, 0, 0);
+  // Bucket by study day (4 AM–4 AM, matching the day-granular isDue), not by 24h from this
+  // moment. round() (not floor) absorbs the ±1h a DST switch puts between two day starts.
+  const startOfToday = studyDayStart(now);
   for (const d of state.decks)
     for (const c of d.cards) {
       if (c.fsrs.lastReview === null) continue;
-      const dueDay = new Date(c.fsrs.due);
-      dueDay.setHours(0, 0, 0, 0);
-      const day = Math.round((dueDay.getTime() - startOfToday.getTime()) / DAY);
+      const day = Math.round((studyDayStart(c.fsrs.due).getTime() - startOfToday.getTime()) / DAY);
       if (day < 0 || day > 20) continue;
       if ((c.fsrs.stability ?? 0) >= 21) fdMature[day]++;
       else fdYoung[day]++;

@@ -22,8 +22,8 @@ export const CHANGELOG: ChangelogRelease[] = [
         body: 'A new tab lists Norwegian language cafés around Oslo for the next 7 days (from deichman.no). Say you’re going or can’t make it — and hover the "going" count to see who else will be there.',
       },
       {
-        title: 'Due cards unlock at midnight',
-        body: 'Cards due today are ready from the start of the day, Anki-style — no more waiting until the exact minute you reviewed them yesterday. Short learning steps still keep their exact timing.',
+        title: 'Due cards unlock at the start of the day',
+        body: 'Cards due today are ready from the start of the day, Anki-style — no more waiting until the exact minute you reviewed them yesterday. The day rolls over at 4 AM, so a late-night session still counts as today. Short learning steps keep their exact timing.',
       },
     ],
   },

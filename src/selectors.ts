@@ -1,5 +1,5 @@
 import type { AppState } from './store.tsx';
-import { State } from './fsrs/recall-scheduler.ts';
+import { State, studyDayEnd } from './fsrs/recall-scheduler.ts';
 import type { Deck, RecallCard } from './data/types.ts';
 
 /** Consecutive trailing days with >0 reviews. Today not yet studied doesn't reset it. */
@@ -19,15 +19,11 @@ export function isNew(card: RecallCard): boolean {
   return card.fsrs.lastReview === null;
 }
 
-/** Mirrors RecallScheduler.isDue: Review cards are day-granular (due = any time before local
- *  midnight tonight), sub-day learning steps stay exact. Keep the two in sync. */
+/** Mirrors RecallScheduler.isDue: Review cards are day-granular (due = any time in the current
+ *  4 AM–4 AM study day), sub-day learning steps stay exact. Keep the two in sync. */
 export function isDue(card: RecallCard, now = new Date()): boolean {
   if (isNew(card)) return false;
-  if (card.fsrs.state === State.Review) {
-    const dayEnd = new Date(now);
-    dayEnd.setHours(24, 0, 0, 0);
-    return card.fsrs.due.getTime() < dayEnd.getTime();
-  }
+  if (card.fsrs.state === State.Review) return card.fsrs.due.getTime() < studyDayEnd(now).getTime();
   return card.fsrs.due.getTime() <= now.getTime();
 }
 

@@ -15,6 +15,28 @@ import { Scheduler, createEmptyCard, Rating, State, type Card, type SchedulerOpt
 
 export { createEmptyCard, Rating, State, type Card };
 
+/**
+ * Anki's "next day starts at" hour: the study day rolls over at 4 AM local, not midnight, so a
+ * night owl reviewing at 1 AM is finishing *yesterday's* session — their day-granular cards
+ * don't all come back three hours later.
+ */
+export const DAY_ROLLOVER_HOUR = 4;
+
+/** Start of the (rollover-adjusted) study day containing `t` — i.e. the most recent 4 AM. */
+export function studyDayStart(t: Date): Date {
+  const d = new Date(t);
+  if (d.getHours() < DAY_ROLLOVER_HOUR) d.setDate(d.getDate() - 1);
+  d.setHours(DAY_ROLLOVER_HOUR, 0, 0, 0);
+  return d;
+}
+
+/** End of the study day containing `t` — the next 4 AM, when day-granular cards unlock. */
+export function studyDayEnd(t: Date): Date {
+  const d = studyDayStart(t);
+  d.setDate(d.getDate() + 1);
+  return d;
+}
+
 export interface GradeButtons {
   again: string;
   hard: string;
@@ -55,16 +77,12 @@ export class RecallScheduler {
 
   /**
    * A card is due when its `due` timestamp has passed — except graduated (Review-state) cards,
-   * which use Anki-style day granularity: anything due later today is available from local
-   * midnight, so finishing tonight at 21:00 doesn't push tomorrow's session past 21:00.
-   * Sub-day learning/relearning steps keep exact timing (a 10-min step must stay 10 min).
+   * which use Anki-style day granularity: anything due within the current study day is available
+   * from that day's start, so finishing tonight at 21:00 doesn't push tomorrow's session past
+   * 21:00. Sub-day learning/relearning steps keep exact timing (a 10-min step must stay 10 min).
    */
   isDue(card: Card, now: Date = new Date()): boolean {
-    if (card.state === State.Review) {
-      const dayEnd = new Date(now);
-      dayEnd.setHours(24, 0, 0, 0); // local midnight tonight
-      return card.due.getTime() < dayEnd.getTime();
-    }
+    if (card.state === State.Review) return card.due.getTime() < studyDayEnd(now).getTime();
     return card.due.getTime() <= now.getTime();
   }
 

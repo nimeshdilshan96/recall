@@ -148,11 +148,13 @@ by 1, with quick presets — note the limit applies per *session start*, not per
 `newest`, or `random` — by reordering the unseen cards before `buildQueue` slices the first N.
 **Study direction** flips which side is the prompt.
 
-**Due cards unlock at midnight** (Anki-style day granularity): a graduated (Review-state) card
-due *any time today* is available from local midnight — reviewing tonight at 21:00 doesn't make
-tomorrow's session wait until 21:00. Sub-day learning/relearning steps (e.g. the 10-minute
-relearn loop) keep exact timing. Due timestamps are stored exact; only the *is it due yet?*
-comparison is day-granular (`RecallScheduler.isDue` / `selectors.isDue`).
+**Due cards unlock at the start of the day** (Anki-style day granularity): a graduated
+(Review-state) card due *any time today* is available from the day's start — reviewing tonight at
+21:00 doesn't make tomorrow's session wait until 21:00. Like Anki, the study day rolls over at
+**4 AM local**, not midnight, so a night-owl session at 1 AM still counts as yesterday's and
+doesn't bring everything back three hours later. Sub-day learning/relearning steps (e.g. the
+10-minute relearn loop) keep exact timing. Due timestamps are stored exact; only the *is it due
+yet?* comparison is day-granular (`studyDayStart`/`studyDayEnd` in `recall-scheduler.ts`).
 
 Home's **Daily goals** show two bars, each with a "3 of 12 reviews done"-style label:
 *Review due cards* = reviews done today ÷ (done + still due), and *Learn new cards* = first
