@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useApp } from '../store.tsx';
-import { Rating, formatInterval } from '../fsrs/recall-scheduler.ts';
+import { Rating, State, formatInterval } from '../fsrs/recall-scheduler.ts';
 import { autoNordic, checkTyped, clozeParts } from '../util/answer.ts';
 import { EditCardDialog } from '../components/EditCardDialog.tsx';
 
@@ -23,7 +23,15 @@ export function Study() {
 
   // Done state
   if (!card) {
-    const futureDue = deck ? deck.cards.map((c) => c.fsrs.due.getTime()).filter((x) => x > now.getTime()) : [];
+    // Review cards unlock at local midnight of their due day (day-granular isDue), so the
+    // "next review" moment is that midnight — not the raw timestamp.
+    const unlockAt = (c: { fsrs: { state: number; due: Date } }) => {
+      if (c.fsrs.state !== State.Review) return c.fsrs.due.getTime();
+      const d = new Date(c.fsrs.due);
+      d.setHours(0, 0, 0, 0);
+      return d.getTime();
+    };
+    const futureDue = deck ? deck.cards.filter((c) => c.fsrs.lastReview !== null).map(unlockAt).filter((x) => x > now.getTime()) : [];
     const nextIn = futureDue.length ? formatInterval(Math.min(...futureDue) - now.getTime()) : '1d';
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, textAlign: 'center' }}>

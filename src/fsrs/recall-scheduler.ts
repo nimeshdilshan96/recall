@@ -53,8 +53,18 @@ export class RecallScheduler {
     return createEmptyCard(now);
   }
 
-  /** A card is due when its `due` timestamp has passed. New cards are due immediately. */
+  /**
+   * A card is due when its `due` timestamp has passed — except graduated (Review-state) cards,
+   * which use Anki-style day granularity: anything due later today is available from local
+   * midnight, so finishing tonight at 21:00 doesn't push tomorrow's session past 21:00.
+   * Sub-day learning/relearning steps keep exact timing (a 10-min step must stay 10 min).
+   */
   isDue(card: Card, now: Date = new Date()): boolean {
+    if (card.state === State.Review) {
+      const dayEnd = new Date(now);
+      dayEnd.setHours(24, 0, 0, 0); // local midnight tonight
+      return card.due.getTime() < dayEnd.getTime();
+    }
     return card.due.getTime() <= now.getTime();
   }
 

@@ -257,10 +257,16 @@ export function Stats() {
   // --- Future due (next 21 days) from real due dates ---
   const fdYoung = new Array(21).fill(0);
   const fdMature = new Array(21).fill(0);
+  // Bucket by calendar day (matching the day-granular isDue), not by 24h from this moment.
+  // round() (not floor) absorbs the ±1h a DST switch puts between two local midnights.
+  const startOfToday = new Date(now);
+  startOfToday.setHours(0, 0, 0, 0);
   for (const d of state.decks)
     for (const c of d.cards) {
       if (c.fsrs.lastReview === null) continue;
-      const day = Math.floor((c.fsrs.due.getTime() - now.getTime()) / DAY);
+      const dueDay = new Date(c.fsrs.due);
+      dueDay.setHours(0, 0, 0, 0);
+      const day = Math.round((dueDay.getTime() - startOfToday.getTime()) / DAY);
       if (day < 0 || day > 20) continue;
       if ((c.fsrs.stability ?? 0) >= 21) fdMature[day]++;
       else fdYoung[day]++;

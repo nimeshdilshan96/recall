@@ -78,6 +78,11 @@ Three rolling **7-day** gauges on the Stats screen, computed in `repo.ts:getRete
   near a clipping right edge (right-aligns the pill). `.chart-col`/`.chart-marker` add the
   line-chart hover dot. The "What's new" dialog content lives in `src/data/changelog.ts` — bump
   `version` to announce; dismissal stores `users.seen_version`.
+- **Due-ness is day-granular for graduated cards** (Anki-style): a Review-state card is due from
+  **local midnight of its due day**, so finishing tonight at 21:00 doesn't push tomorrow to 21:00.
+  Sub-day learning/relearning steps stay exact-time. Lives in `RecallScheduler.isDue` AND
+  `selectors.isDue` — keep the two in sync; Study's "Next review in" hint and Stats' forecast
+  bucket by the same rule. The FSRS grading math is untouched (due timestamps are stored exact).
 - **Study settings** (README "Study settings & daily goals"): `users.new_limit` steps by 1;
   `users.new_order` ('oldest' | 'newest' | 'random') picks which unseen cards a session introduces —
   `store.startStudy` reorders the unseen cards before `buildQueue` slices the first N (the FSRS

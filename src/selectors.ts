@@ -19,8 +19,16 @@ export function isNew(card: RecallCard): boolean {
   return card.fsrs.lastReview === null;
 }
 
+/** Mirrors RecallScheduler.isDue: Review cards are day-granular (due = any time before local
+ *  midnight tonight), sub-day learning steps stay exact. Keep the two in sync. */
 export function isDue(card: RecallCard, now = new Date()): boolean {
-  return !isNew(card) && card.fsrs.due.getTime() <= now.getTime();
+  if (isNew(card)) return false;
+  if (card.fsrs.state === State.Review) {
+    const dayEnd = new Date(now);
+    dayEnd.setHours(24, 0, 0, 0);
+    return card.fsrs.due.getTime() < dayEnd.getTime();
+  }
+  return card.fsrs.due.getTime() <= now.getTime();
 }
 
 export function deckCounts(deck: Deck, now = new Date()) {

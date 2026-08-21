@@ -148,6 +148,12 @@ by 1, with quick presets — note the limit applies per *session start*, not per
 `newest`, or `random` — by reordering the unseen cards before `buildQueue` slices the first N.
 **Study direction** flips which side is the prompt.
 
+**Due cards unlock at midnight** (Anki-style day granularity): a graduated (Review-state) card
+due *any time today* is available from local midnight — reviewing tonight at 21:00 doesn't make
+tomorrow's session wait until 21:00. Sub-day learning/relearning steps (e.g. the 10-minute
+relearn loop) keep exact timing. Due timestamps are stored exact; only the *is it due yet?*
+comparison is day-granular (`RecallScheduler.isDue` / `selectors.isDue`).
+
 Home's **Daily goals** show two bars, each with a "3 of 12 reviews done"-style label:
 *Review due cards* = reviews done today ÷ (done + still due), and *Learn new cards* = first
 exposures today ÷ your new-cards limit (capped at what's actually available). Done-today counts
