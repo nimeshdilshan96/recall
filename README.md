@@ -44,6 +44,7 @@ Browser (Vite SPA)  ──fetch /api──►  Fastify (server/)  ──►  rep
 
 ```
 users (id, username, password_hash, xp, gems, created_at, new_limit, study_direction,
+       new_order,                  -- which unseen cards a session introduces: 'oldest' | 'newest' | 'random'
        seen_version)               -- last "What's new" version dismissed (null = never)
 decks (id, user_id, name, color, pos,
        visibility,                  -- 'private' (default) | 'public' — public = listed in Community
@@ -120,9 +121,10 @@ marker + guide line via `.chart-col`/`.chart-marker`. Triggers near a clipping r
 ## Browsing & editing cards
 
 **Browse** lists every card with deck filter chips, a search box, and a **sort**: *Default*
-(deck order) or *Most missed* — ranked by each card's Again-rate from `review_log`
-(`GET /api/hardest?limit=…`, same source as the Stats "Hardest cards" list). Cards missed on
-≥ 30% of reviews carry a warning badge; hover it for the exact miss count.
+(deck order), *Most missed* — ranked by each card's Again-rate from `review_log`
+(`GET /api/hardest?limit=…`, same source as the Stats "Hardest cards" list) — or *New first*,
+which floats unstudied cards to the top. Cards missed on ≥ 30% of reviews carry a warning badge
+(hover it for the exact miss count); cards never studied carry a **NEW** pill in the accent color.
 
 **Editing.** Every Browse row has an Edit button, and the Study card has a pencil in its top-right
 corner — both open the same card-style popup (`components/EditCardDialog.tsx`) for front / back /
@@ -133,6 +135,21 @@ reschedules a card. (For shared decks, content is copied at import/pull time —
 The dialog renders through a React portal: screen wrappers keep a CSS transform from their entry
 animation (which would re-anchor `position: fixed`), and since the accent CSS variables live on
 the app root, `EditCardDialog` re-applies them on its backdrop.
+
+## Study settings & daily goals
+
+Settings (persisted per user via `PATCH /api/settings`) control how a study session is built in
+`store.startStudy`: due cards first, then up to **New cards per day** unseen cards (adjustable
+by 1, with quick presets — note the limit applies per *session start*, not per calendar day).
+**New card order** picks *which* unseen cards get introduced — `oldest` (order added, default),
+`newest`, or `random` — by reordering the unseen cards before `buildQueue` slices the first N.
+**Study direction** flips which side is the prompt.
+
+Home's **Daily goals** show two bars, each with a "3 of 12 reviews done"-style label:
+*Review due cards* = reviews done today ÷ (done + still due), and *Learn new cards* = first
+exposures today ÷ your new-cards limit (capped at what's actually available). Done-today counts
+come from `GET /api/today` (`repo.ts:getTodayCounts`), split by whether the card's first-ever
+review happened today; days roll over at **UTC** midnight.
 
 ## Announcing releases (the "What's new" dialog)
 

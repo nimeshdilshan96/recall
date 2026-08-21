@@ -15,6 +15,23 @@ export interface ChangelogRelease {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: '2.7',
+    items: [
+      {
+        title: 'Spot new cards at a glance',
+        body: 'Cards you haven’t studied yet carry a NEW badge in Browse, and a "New first" sort floats them to the top.',
+      },
+      {
+        title: 'Tune how new cards arrive',
+        body: 'The daily new-card limit now adjusts by 1, and a new setting picks which unseen cards a session introduces: oldest first, newest first, or random.',
+      },
+      {
+        title: 'Daily goals, made honest',
+        body: 'Goals now show your exact progress ("3 of 12 reviews done"), and the new-cards goal targets your own daily limit instead of a fixed 20.',
+      },
+    ],
+  },
+  {
     version: '2.6',
     items: [
       {
@@ -24,23 +41,6 @@ export const CHANGELOG: ChangelogRelease[] = [
       {
         title: 'Sort Browse by trouble',
         body: 'A new "Most missed" sort puts your hardest cards first, and cards you miss often carry a warning badge — hover it for your miss count.',
-      },
-    ],
-  },
-  {
-    version: '2.5',
-    items: [
-      {
-        title: 'Watch your progress grow',
-        body: 'Stats has a new "Mature cards over time" chart. See your long-term memory grow day by day, with 1W / 1M / 3M / 1Y views.',
-      },
-      {
-        title: 'A full-year calendar',
-        body: 'The activity calendar now shows the whole year at a glance, with month labels.',
-      },
-      {
-        title: 'Numbers on hover',
-        body: 'Hover any chart to see the exact numbers for that day.',
       },
     ],
   },

@@ -93,6 +93,7 @@ input:focus {
   content: attr(data-tip);
   display: none; /* fully removed when hidden — an invisible box would still widen the page */
   position: absolute;
+  z-index: 5; /* above later siblings (e.g. following Browse rows) */
   top: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);

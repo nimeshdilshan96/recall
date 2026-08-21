@@ -1,6 +1,5 @@
 import { useApp, type Screen } from '../store.tsx';
-import { NavIcon, FlameIcon, type NavKey } from './icons.tsx';
-import { streakFrom } from '../selectors.ts';
+import { NavIcon, type NavKey } from './icons.tsx';
 import { useState } from 'react';
 
 const NAV: { key: NavKey; label: string; screen: Screen }[] = [
@@ -15,7 +14,6 @@ const NAV: { key: NavKey; label: string; screen: Screen }[] = [
 export function Sidebar() {
   const { state, actions } = useApp();
   const [hover, setHover] = useState<string | null>(null);
-  const streak = streakFrom(state.history);
   const todayLabel = new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
   return (
@@ -75,14 +73,6 @@ export function Sidebar() {
         );
       })}
 
-      <div style={{ marginTop: 'auto', padding: 14, borderRadius: 14, background: 'oklch(0.97 0 0)', border: '1px solid oklch(0.9 0 0)' }}>
-        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase', color: '#afafaf' }}>Current streak</div>
-        <div className="icon-stat" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-          <FlameIcon width={29} height={35} withStroke />
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 600, color: '#4b4b4b' }}>{streak}</span>
-          <span style={{ fontSize: 13, color: '#777777' }}>days</span>
-        </div>
-      </div>
     </nav>
   );
 }

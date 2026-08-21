@@ -115,8 +115,10 @@ export function Browse() {
         />
       </div>
 
-      <div style={{ background: 'oklch(0.99 0 0)', border: '2px solid oklch(0.9 0 0)', borderRadius: 16, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', padding: '11px 18px', fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: '#afafaf', background: 'oklch(0.97 0 0)', borderBottom: '1px solid oklch(0.9 0 0)' }}>
+      {/* No overflow:hidden here — it would clip the hover tooltips ("Not learned yet", miss counts);
+          the header rounds its own top corners instead. */}
+      <div style={{ background: 'oklch(0.99 0 0)', border: '2px solid oklch(0.9 0 0)', borderRadius: 16 }}>
+        <div style={{ display: 'flex', padding: '11px 18px', fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: '#afafaf', background: 'oklch(0.97 0 0)', borderBottom: '1px solid oklch(0.9 0 0)', borderRadius: '14px 14px 0 0' }}>
           <span style={{ flex: 2 }}>Front</span>
           <span style={{ flex: 2 }}>Back</span>
           <span style={{ flex: 1.4 }}>Deck</span>

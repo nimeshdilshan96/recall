@@ -69,6 +69,13 @@ Three rolling **7-day** gauges on the Stats screen, computed in `repo.ts:getRete
   near a clipping right edge (right-aligns the pill). `.chart-col`/`.chart-marker` add the
   line-chart hover dot. The "What's new" dialog content lives in `src/data/changelog.ts` — bump
   `version` to announce; dismissal stores `users.seen_version`.
+- **Study settings** (README "Study settings & daily goals"): `users.new_limit` steps by 1;
+  `users.new_order` ('oldest' | 'newest' | 'random') picks which unseen cards a session introduces —
+  `store.startStudy` reorders the unseen cards before `buildQueue` slices the first N (the FSRS
+  scheduler itself is untouched). The new-card limit is per *session start*, not per calendar day.
+  Home's Daily goals read `GET /api/today` (UTC day boundary); the "Learn new cards" bar targets
+  `state.newLimit`. Browse marks unstudied cards (`selectors.isNew`) with an accent "NEW" pill and
+  has a "New first" sort.
 - **Card editing**: Browse rows + the Study card's corner pencil open `components/EditCardDialog.tsx`
   (front/back/mnemonic/image → `PATCH /api/cards/:id`; FSRS state and review_log untouched).
   Modals must render via `createPortal` — screen wrappers keep a transform from their entry
