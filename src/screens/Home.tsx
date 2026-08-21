@@ -95,17 +95,19 @@ export function Home() {
           );
           const buttonStyle = (grow: boolean) => ({ padding: '11px 18px 13px', borderRadius: 13, fontSize: 13, ...(grow ? { flex: 1 } : { minWidth: 96 }) });
           const practiceBtn = (grow: boolean) => (
-            <button className="btn3d" onClick={() => actions.startPractice(d.id)} style={buttonStyle(grow)}>
+            <button className="btn3d tip" data-tip="Free run of the whole deck, shuffled — doesn't touch your schedule or XP" onClick={() => actions.startPractice(d.id)} style={buttonStyle(grow)}>
               Practice
             </button>
           );
           const studyBtn = (grow: boolean) =>
             has ? (
-              <button className="btn3d" onClick={() => actions.startStudy(d.id)} style={buttonStyle(grow)}>
+              <button className="btn3d tip tip-left" data-tip="Today's real session: due reviews + new cards — grades update your schedule" onClick={() => actions.startStudy(d.id)} style={buttonStyle(grow)}>
                 Study
               </button>
             ) : (
               <button
+                className="tip tip-left"
+                data-tip="All caught up — no cards due or new right now"
                 onClick={() => actions.showToast('No cards due in this deck')}
                 style={{ border: 'none', cursor: 'pointer', background: 'oklch(0.92 0 0)', color: '#afafaf', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', boxShadow: '0 4px 0 oklch(0.82 0 0)', ...buttonStyle(grow) }}
               >
