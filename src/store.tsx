@@ -3,12 +3,12 @@ import { RecallScheduler, Rating, State } from './fsrs/recall-scheduler.ts';
 import type { Deck, DeckVisibility, RecallCard, CardType } from './data/types.ts';
 import { parseCloze } from './util/answer.ts';
 import { pickAccent } from './theme.ts';
-import { api, type StudyDirection, type NewOrder, type PublicUser, type HardestCard, type Retention, type CommunityDeck, type CommunityDeckDetail, type CafeEvent, type RsvpStatus } from './api.ts';
+import { api, type StudyDirection, type NewOrder, type PublicUser, type HardestCard, type Retention, type CommunityDeck, type CommunityDeckDetail, type CafeEvent, type RsvpStatus, type FeatureRequest, type RequestStatus } from './api.ts';
 import { CURRENT_VERSION } from './data/changelog.ts';
 
 export type { StudyDirection, NewOrder };
-export type { CommunityDeck, CommunityDeckDetail, CafeEvent, RsvpStatus };
-export type Screen = 'home' | 'study' | 'add' | 'community' | 'sprakkafe' | 'league' | 'stats' | 'browse' | 'settings';
+export type { CommunityDeck, CommunityDeckDetail, CafeEvent, RsvpStatus, FeatureRequest, RequestStatus };
+export type Screen = 'home' | 'study' | 'add' | 'community' | 'sprakkafe' | 'league' | 'stats' | 'browse' | 'changelog' | 'requests' | 'settings';
 export type AuthMode = 'login' | 'register';
 
 interface CardRef {
@@ -72,6 +72,9 @@ export interface AppState {
   events: CafeEvent[]; // upcoming language cafés (next 7 days), with everyone's RSVPs
   eventsLoaded: boolean; // false until the first /api/events response (drives the loading state)
 
+  requests: FeatureRequest[]; // feature-request board, most-voted first
+  requestsLoaded: boolean;
+
   newLimit: number;
   studyDirection: StudyDirection;
   newOrder: NewOrder;
@@ -116,6 +119,10 @@ export interface AppActions {
 
   loadEvents(): void;
   rsvpEvent(eventId: string, status: RsvpStatus | null): void;
+
+  loadRequests(): void;
+  voteRequest(requestId: string, vote: boolean): void;
+  createRequest(title: string, body: string): Promise<boolean>;
 
   loadCommunity(): void;
   openCommunityDeck(deckId: string): void;
@@ -219,6 +226,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     communityBusy: false,
     events: [],
     eventsLoaded: false,
+    requests: [],
+    requestsLoaded: false,
     newLimit: 20,
     studyDirection: 'front',
     newOrder: 'oldest',
@@ -494,6 +503,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
             showToast((e as Error).message);
           },
         );
+      },
+
+      loadRequests: () => {
+        api
+          .requests()
+          .then((requests) => patch({ requests, requestsLoaded: true }))
+          .catch((e) => {
+            patch({ requestsLoaded: true });
+            showToast((e as Error).message);
+          });
+      },
+      voteRequest: (requestId, vote) => {
+        const prev = stateRef.current.requests;
+        // Optimistic: bump the count in place — no client-side resort, so rows don't jump around.
+        setState((s2) => ({
+          ...s2,
+          requests: s2.requests.map((r) => (r.id === requestId ? { ...r, myVote: vote, votes: r.votes + (vote ? 1 : -1) } : r)),
+        }));
+        api.voteRequest(requestId, vote).then(
+          (request) => setState((s2) => ({ ...s2, requests: s2.requests.map((r) => (r.id === requestId ? request : r)) })),
+          (e) => {
+            setState((s2) => ({ ...s2, requests: prev }));
+            showToast((e as Error).message);
+          },
+        );
+      },
+      createRequest: async (title, body) => {
+        try {
+          const request = await api.createRequest(title, body);
+          // New requests start at 1 vote (the author's) — slot in after the last row with more votes.
+          setState((s2) => {
+            const requests = [...s2.requests];
+            const at = requests.findIndex((r) => r.votes < request.votes);
+            requests.splice(at === -1 ? requests.length : at, 0, request);
+            return { ...s2, requests };
+          });
+          showToast('Request added');
+          return true;
+        } catch (e) {
+          showToast((e as Error).message);
+          return false;
+        }
       },
 
       loadCommunity: () => {

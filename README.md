@@ -57,6 +57,9 @@ review_log (id, card_id, user_id, rating, reviewed_at,
 events (id, slug, title, library, organizer, ingress, target_audience, price,
         start_time, end_time, cancelled, last_seen_at)         -- language cafés cached from deichman.no
 event_rsvps (event_id, user_id, status, created_at)            -- 'going' | 'cant', PK (event_id, user_id)
+requests (id, user_id, title, body, created_at,
+          status)                    -- 'open' | 'under_review' | 'planned' | 'done', curated by hand in SQL
+request_votes (request_id, user_id, created_at)                 -- one upvote per user, PK (request_id, user_id)
 ```
 
 Grades run FSRS server-side and persist the updated `cards` row + a `review_log` entry in one
@@ -162,13 +165,33 @@ exposures today ÷ your new-cards limit (capped at what's actually available). D
 come from `GET /api/today` (`repo.ts:getTodayCounts`), split by whether the card's first-ever
 review happened today; days roll over at **UTC** midnight.
 
-## Announcing releases (the "What's new" dialog)
+## Announcing releases (the "What's new" dialog + Changelog page)
 
-`src/data/changelog.ts` holds a list of releases (newest first); the dialog shows them all, with
-older ones under an "Earlier" divider — keep the list to the last 1–2 releases. After login,
-users who haven't dismissed the *newest* version see the dialog once (new users included);
-"Got it" stores that version in `users.seen_version` via the settings PATCH. To announce a
-release: unshift a new entry and trim old ones.
+`src/data/changelog.ts` holds the **full release history** (newest first, each with a display
+date). Two consumers: the **Changelog screen** (desktop sidebar tab; on mobile it's in the
+avatar dropdown next to Settings, keeping the bottom nav at 7 items) renders every release with
+a "Current" pill on the newest; the **"What's new" dialog** shows only the newest two, with the
+older one under an "Earlier" divider. After login, users who haven't dismissed the *newest*
+version see the dialog once (new users included); "Got it" stores that version in
+`users.seen_version` via the settings PATCH. To announce a release: unshift a new entry —
+old entries stay, they're the changelog.
+
+## Requests (feature voting board)
+
+The **Requests** tab lets anyone on the server post a feature request and upvote others'
+(posting auto-upvotes your own, so everything starts at 1). Rows sort most-voted first.
+Each request carries a status pill — *Open* → *Under review* → *Planned* → *Done* — which is
+curated **by hand in SQL** (`UPDATE requests SET status = 'planned' WHERE id = …`); no UI or
+endpoint changes it.
+
+```
+requests      (id, user_id, title, body, status, created_at)
+request_votes (request_id, user_id, created_at)   -- PK (request_id, user_id)
+
+GET  /api/requests           all requests, most-voted first, with your vote flagged
+POST /api/requests           { title, body? }   title ≤ 120 chars, body ≤ 1000
+POST /api/requests/:id/vote  { vote: true | false }
+```
 
 ## Sharing decks (Community)
 
@@ -186,8 +209,8 @@ account with **new ids and fresh FSRS state** — a copy is a new note for *your
 schedules independently. After import the catalog shows *Added ✓* and re-importing is refused.
 
 **Getting new cards later.** Each copy remembers where it came from (`decks.forked_from` +
-`cards.source_card_id`). When the author adds cards to a deck you imported, your copy shows a
-*"N new cards available from @author — Get new cards"* banner. Pulling is **additive only**: new
+`cards.source_card_id`). When the author adds cards to a deck you imported, a notification banner
+appears at the top of Home (*"N new cards in Deck — Added by @author — Get all"*). Pulling is **additive only**: new
 cards arrive with fresh FSRS state; the author's edits and deletions are never propagated (your
 copy and review history are yours).
 
@@ -212,8 +235,9 @@ POST  /api/decks/:id/pull            pull new cards from the (still public) sour
 ## Språkkafé (language-café events)
 
 The **Språkkafé** tab lists Norwegian language cafés around Oslo for the next 7 days, and lets
-everyone on the server RSVP — *Going* / *Can't go* — so you can see who else will be there
-(hover the "N going" count for names).
+everyone on the server RSVP *Going* so you can see who else will be there (hover the "N going"
+count for names). Each event also has an *Add to calendar* button that downloads an .ics file.
+(The server still accepts 'cant' RSVPs — the UI just no longer offers the button.)
 
 **Where the data comes from.** `server/deichman.ts` pulls from deichman.no's (Oslo public
 library's) event API — public JSON, no auth, but **undocumented**, so the fetch layer is

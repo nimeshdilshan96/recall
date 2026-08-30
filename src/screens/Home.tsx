@@ -42,6 +42,29 @@ export function Home() {
 
   return (
     <div style={{ padding: '28px var(--pad) 48px', animation: 'rvFloat 0.4s ease both' }}>
+      {state.decks
+        .filter((d) => d.newAvailable > 0)
+        .map((d) => (
+          <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'oklch(0.99 0 0)', border: '2px solid var(--accent-soft)', borderRadius: 16, padding: '13px 14px 13px 16px', margin: '0 0 14px' }}>
+            <span style={{ width: 38, height: 38, borderRadius: 11, background: 'var(--accent-tint)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width={19} height={19} viewBox="0 0 24 24" style={{ stroke: 'var(--accent)', fill: 'none', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', display: 'block' }}>
+                <path d="M12 4v11" />
+                <path d="M7.5 11.5L12 16l4.5-4.5" />
+                <path d="M5 19.5h14" />
+              </svg>
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 14.5, fontWeight: 700, color: '#4b4b4b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {d.newAvailable} new card{d.newAvailable === 1 ? '' : 's'} in {d.name}
+              </div>
+              <div style={{ fontSize: 12.5, color: '#afafaf', marginTop: 2 }}>Added by @{d.fromUsername}</div>
+            </div>
+            <button className="btn3d" onClick={() => actions.pullNewCards(d.id)} style={{ padding: '10px 16px 12px', borderRadius: 12, fontSize: 12, flexShrink: 0 }}>
+              Get all
+            </button>
+          </div>
+        ))}
+
       <div style={{ background: 'oklch(0.99 0 0)', border: '2px solid oklch(0.9 0 0)', borderRadius: 18, padding: '20px 22px', margin: '0 0 24px' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 19, fontWeight: 700, color: '#4b4b4b', marginBottom: 16 }}>Daily goals</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -161,16 +184,6 @@ export function Home() {
                       Delete
                     </button>
                   </span>
-                </div>
-              )}
-              {d.newAvailable > 0 && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '0 18px 16px', background: 'var(--accent-tint)', borderRadius: 12, padding: '10px 10px 10px 14px' }}>
-                  <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: '#4b4b4b' }}>
-                    {d.newAvailable} new card{d.newAvailable === 1 ? '' : 's'} available from @{d.fromUsername}
-                  </span>
-                  <button className="btn3d" onClick={() => actions.pullNewCards(d.id)} style={{ padding: '9px 14px 11px', borderRadius: 11, fontSize: 12 }}>
-                    Get new cards
-                  </button>
                 </div>
               )}
             </div>

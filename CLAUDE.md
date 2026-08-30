@@ -37,8 +37,8 @@ Open http://localhost:5173. The `data/recall.db` file is a normal SQLite DB you 
   legacy `{{}}` marker) with the answer on the back — used to disambiguate function words.
 - **Deck sharing (Community)**: decks have `visibility` ('private' default | 'public'); public decks
   are copied on import (fresh FSRS state, new ids), never shared live. Provenance columns
-  `decks.forked_from` + `cards.source_card_id` power "Added ✓" and the additive "Get new cards"
-  pull. Imported decks can't be re-shared (gate on the server's `imported` flag, not `fromUsername` —
+  `decks.forked_from` + `cards.source_card_id` power "Added ✓" and the additive new-cards pull
+  (a "Get all" notification banner at the top of Home). Imported decks can't be re-shared (gate on the server's `imported` flag, not `fromUsername` —
   the latter goes null when the source is deleted). Empty public decks are hidden from the catalog.
   Details in README "Sharing decks (Community)".
 
@@ -76,8 +76,15 @@ Three rolling **7-day** gauges on the Stats screen, computed in `repo.ts:getRete
   streak and reviews chart read the array's tail, so the length is safe to grow but not shrink.
 - **UI conventions**: `class="tip"` + `data-tip` = the CSS-only tooltip (index.css); add `tip-left`
   near a clipping right edge (right-aligns the pill). `.chart-col`/`.chart-marker` add the
-  line-chart hover dot. The "What's new" dialog content lives in `src/data/changelog.ts` — bump
-  `version` to announce; dismissal stores `users.seen_version`.
+  line-chart hover dot. **Requests tab**: a feature-request voting board (`requests` +
+  `request_votes` tables; `repo.ts:getRequests/createRequest/setRequestVote`, routes under
+  `/api/requests`). Anyone posts/upvotes; the author auto-upvotes; rows sort most-voted first
+  (client never resorts in place). `requests.status` ('open' | 'under_review' | 'planned' |
+  'done') is curated **by hand in SQL** — no UI or endpoint changes it.
+  `src/data/changelog.ts` holds the **full release history** (newest first):
+  the Changelog screen (desktop sidebar tab; avatar dropdown on mobile) shows all of it, the
+  "What's new" dialog only the newest two. To announce: **unshift** a release (never trim —
+  `CURRENT_VERSION = CHANGELOG[0].version`); dismissal stores `users.seen_version`.
 - **Due-ness is day-granular for graduated cards** (Anki-style): a Review-state card is due from
   the **start of its due study day**, so finishing tonight at 21:00 doesn't push tomorrow to 21:00.
   The study day rolls over at **4 AM local** (`DAY_ROLLOVER_HOUR`, Anki's "next day starts at"

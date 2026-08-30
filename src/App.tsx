@@ -13,6 +13,8 @@ import { Community } from './screens/Community.tsx';
 import { Sprakkafe } from './screens/Sprakkafe.tsx';
 import { League } from './screens/League.tsx';
 import { Stats } from './screens/Stats.tsx';
+import { Changelog } from './screens/Changelog.tsx';
+import { Requests } from './screens/Requests.tsx';
 import { Settings } from './screens/Settings.tsx';
 import { Toast } from './components/Toast.tsx';
 import { WhatsNewDialog } from './components/WhatsNewDialog.tsx';
@@ -57,6 +59,8 @@ export function App() {
       {state.screen === 'sprakkafe' && <Sprakkafe />}
       {state.screen === 'league' && <League />}
       {state.screen === 'stats' && <Stats />}
+      {state.screen === 'changelog' && <Changelog />}
+      {state.screen === 'requests' && <Requests />}
       {state.screen === 'settings' && <Settings />}
     </main>
   );

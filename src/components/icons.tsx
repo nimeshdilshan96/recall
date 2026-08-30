@@ -1,4 +1,4 @@
-export type NavKey = 'home' | 'add' | 'community' | 'sprakkafe' | 'league' | 'stats' | 'browse';
+export type NavKey = 'home' | 'add' | 'community' | 'sprakkafe' | 'league' | 'stats' | 'browse' | 'changelog' | 'requests';
 
 export function NavIcon({ name, color, size }: { name: NavKey; color: string; size: number }) {
   const stroke = { stroke: color, fill: 'none', strokeWidth: 2.2, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const, display: 'block' as const };
@@ -29,6 +29,22 @@ export function NavIcon({ name, color, size }: { name: NavKey; color: string; si
       <svg width={size} height={size} viewBox="0 0 24 24" style={{ ...stroke, strokeWidth: 2 }}>
         <path d="M14 4h4.5A2.5 2.5 0 0 1 21 6.5v4A2.5 2.5 0 0 1 18.5 13H18v3l-3.4-3H14" />
         <path d="M3 9.5A2.5 2.5 0 0 1 5.5 7h5A2.5 2.5 0 0 1 13 9.5v4a2.5 2.5 0 0 1-2.5 2.5H8l-3.5 3v-3A2.5 2.5 0 0 1 3 13.5z" />
+      </svg>
+    );
+  if (name === 'requests')
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" style={stroke}>
+        <path d="M4 17c2.6 0 3.6-3.2 5-5.6 1-1.7 2.1-3 3.6-2.2 1.4.8 1.1 2.7 2.1 4 1.1 1.4 2.4 1.1 5.3-3.2" />
+        <circle cx={4} cy={17} r={1.6} />
+        <circle cx={20} cy={10} r={1.6} />
+      </svg>
+    );
+  if (name === 'changelog')
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" style={{ ...stroke, strokeWidth: 2 }}>
+        <path d="M4 5.5h16" />
+        <path d="M4 12h10" />
+        <path d="M4 18.5h13" />
       </svg>
     );
   if (name === 'stats')

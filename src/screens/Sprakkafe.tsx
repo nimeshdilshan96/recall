@@ -21,6 +21,37 @@ function Pill({ children, tone = 'gray' }: { children: React.ReactNode; tone?: '
   return <span style={{ ...colors, fontSize: 11.5, fontWeight: 700, padding: '4px 9px 5px', borderRadius: 8, whiteSpace: 'nowrap' }}>{children}</span>;
 }
 
+/** UTC timestamp in ICS basic format (YYYYMMDDTHHMMSSZ). */
+const icsStamp = (t: number) => new Date(t).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+/** Escape ICS text values (RFC 5545): backslash, comma, semicolon, newline. */
+const icsEscape = (s: string) => s.replace(/\\/g, '\\\\').replace(/[,;]/g, (c) => `\\${c}`).replace(/\n/g, '\\n');
+
+/** Build and download an .ics file for the event — opens in Apple/Google/Outlook calendar. */
+function downloadIcs(ev: CafeEvent) {
+  const ics = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Recall//Sprakkafe//EN',
+    'BEGIN:VEVENT',
+    `UID:${ev.id}@recall`,
+    `DTSTAMP:${icsStamp(Date.now())}`,
+    `DTSTART:${icsStamp(ev.startTime)}`,
+    `DTEND:${icsStamp(ev.endTime)}`,
+    `SUMMARY:${icsEscape(ev.title)}`,
+    ...(ev.library ? [`LOCATION:${icsEscape(ev.library)}`] : []),
+    `DESCRIPTION:${icsEscape([ev.organizer, ev.url].filter(Boolean).join('\n'))}`,
+    `URL:${ev.url}`,
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+  const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${ev.title.toLowerCase().replace(/[^a-z0-9æøåé]+/gi, '-').replace(/^-|-$/g, '')}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 /** RSVP toggle: outline when inactive, accent-tinted when this is the user's current answer. */
 function RsvpButton({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
@@ -54,7 +85,29 @@ function EventRow({ ev, isMobile }: { ev: CafeEvent; isMobile: boolean }) {
   const buttons = (
     <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
       <RsvpButton label="Going" active={ev.myStatus === 'going'} onClick={() => toggle('going')} />
-      <RsvpButton label="Can't go" active={ev.myStatus === 'cant'} onClick={() => toggle('cant')} />
+      <button
+        className="tip tip-left"
+        data-tip="Download an .ics file — opens in Apple, Google, or Outlook calendar"
+        onClick={() => {
+          downloadIcs(ev);
+          actions.showToast('Calendar file downloaded');
+        }}
+        style={{
+          border: '2px solid oklch(0.88 0 0)',
+          background: 'oklch(0.99 0 0)',
+          color: '#afafaf',
+          fontSize: 12,
+          fontWeight: 800,
+          letterSpacing: '0.05em',
+          textTransform: 'uppercase',
+          padding: '9px 14px 10px',
+          borderRadius: 12,
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        Add to calendar
+      </button>
     </div>
   );
 
@@ -100,7 +153,7 @@ function EventRow({ ev, isMobile }: { ev: CafeEvent; isMobile: boolean }) {
   );
 }
 
-/** Upcoming Norwegian language cafés around Oslo (from deichman.no) with going / can't-go RSVPs. */
+/** Upcoming Norwegian language cafés around Oslo (from deichman.no) with going RSVPs + .ics export. */
 export function Sprakkafe() {
   const { state, actions } = useApp();
   const isMobile = useIsMobile();

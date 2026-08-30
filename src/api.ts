@@ -67,6 +67,18 @@ export interface PublicUser {
 export type RsvpStatus = 'going' | 'cant';
 
 /** A Norwegian language-café event, cached server-side from deichman.no, with everyone's RSVPs. */
+export type RequestStatus = 'open' | 'under_review' | 'planned' | 'done';
+export interface FeatureRequest {
+  id: string;
+  title: string;
+  body: string;
+  status: RequestStatus;
+  author: string; // username
+  votes: number;
+  myVote: boolean;
+  createdAt: number; // epoch ms
+}
+
 export interface CafeEvent {
   id: string;
   title: string;
@@ -159,4 +171,9 @@ export const api = {
   events: async (): Promise<CafeEvent[]> => (await req<{ events: CafeEvent[] }>('GET', '/api/events')).events,
   rsvp: async (eventId: string, status: RsvpStatus | null): Promise<CafeEvent> =>
     (await req<{ event: CafeEvent }>('POST', `/api/events/${eventId}/rsvp`, { status })).event,
+  requests: async (): Promise<FeatureRequest[]> => (await req<{ requests: FeatureRequest[] }>('GET', '/api/requests')).requests,
+  createRequest: async (title: string, body: string): Promise<FeatureRequest> =>
+    (await req<{ request: FeatureRequest }>('POST', '/api/requests', { title, body })).request,
+  voteRequest: async (requestId: string, vote: boolean): Promise<FeatureRequest> =>
+    (await req<{ request: FeatureRequest }>('POST', `/api/requests/${requestId}/vote`, { vote })).request,
 };

@@ -1,6 +1,6 @@
 import { useApp } from '../store.tsx';
 import { streakFrom } from '../selectors.ts';
-import { FlameIcon, GemIcon, LogoutIcon } from './icons.tsx';
+import { FlameIcon, GemIcon, LogoutIcon, NavIcon } from './icons.tsx';
 import { useIsMobile } from '../hooks/useIsMobile.ts';
 
 export function StatsBar() {
@@ -39,6 +39,14 @@ export function StatsBar() {
               <div style={{ fontSize: 13, fontWeight: 700, color: '#4b4b4b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{state.profileName}</div>
               <div style={{ fontSize: 11, color: '#afafaf', marginTop: 1 }}>Signed in</div>
             </div>
+            <button onClick={() => actions.goto('requests')} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: '12px 14px', fontSize: 13.5, fontWeight: 600, color: '#4b4b4b' }}>
+              <NavIcon name="requests" color="#777777" size={17} />
+              Requests
+            </button>
+            <button onClick={() => actions.goto('changelog')} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: '12px 14px', fontSize: 13.5, fontWeight: 600, color: '#4b4b4b' }}>
+              <NavIcon name="changelog" color="#777777" size={17} />
+              Changelog
+            </button>
             <button onClick={() => actions.goto('settings')} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', padding: '12px 14px', fontSize: 13.5, fontWeight: 600, color: '#4b4b4b' }}>
               <svg width="17" height="17" viewBox="0 0 24 24" style={{ stroke: '#777777', fill: 'none', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', display: 'block' }}>
                 <circle cx="12" cy="12" r="3" />

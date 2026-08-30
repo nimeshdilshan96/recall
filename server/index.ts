@@ -268,6 +268,35 @@ app.post('/api/events/:id/rsvp', async (req, reply) => {
   return { event };
 });
 
+// ---- feature requests (voting board) ----
+app.get('/api/requests', async (req, reply) => {
+  const id = requireUser(req, reply);
+  if (!id) return;
+  return { requests: repo.getRequests(id) };
+});
+
+app.post('/api/requests', async (req, reply) => {
+  const id = requireUser(req, reply);
+  if (!id) return;
+  const { title, body } = (req.body ?? {}) as { title?: string; body?: string };
+  const t = (title ?? '').trim();
+  const b = (body ?? '').trim();
+  if (!t) return reply.code(400).send({ error: 'Title is required' });
+  if (t.length > 120) return reply.code(400).send({ error: 'Title is too long (max 120 characters)' });
+  if (b.length > 1000) return reply.code(400).send({ error: 'Description is too long (max 1000 characters)' });
+  return { request: repo.createRequest(id, t, b) };
+});
+
+app.post('/api/requests/:id/vote', async (req, reply) => {
+  const id = requireUser(req, reply);
+  if (!id) return;
+  const { vote } = (req.body ?? {}) as { vote?: boolean };
+  if (typeof vote !== 'boolean') return reply.code(400).send({ error: 'vote must be true or false' });
+  const request = repo.setRequestVote(id, (req.params as { id: string }).id, vote);
+  if (!request) return reply.code(404).send({ error: 'Request not found' });
+  return { request };
+});
+
 // ---- static SPA (production) ----
 if (existsSync(distDir)) {
   await app.register(fastifyStatic, { root: distDir });

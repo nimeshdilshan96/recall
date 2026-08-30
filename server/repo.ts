@@ -693,3 +693,61 @@ export function setRsvp(userId: string, eventId: string, status: RsvpStatus | nu
   const viewer = (db.prepare('SELECT username FROM users WHERE id = ?').get(userId) as { username: string } | undefined)?.username ?? null;
   return eventToWire(row, rsvps, viewer);
 }
+
+// ---- feature requests (community voting board) ----
+
+export type RequestStatus = 'open' | 'under_review' | 'planned' | 'done';
+
+export interface WireRequest {
+  id: string;
+  title: string;
+  body: string;
+  status: RequestStatus;
+  author: string; // username
+  votes: number;
+  myVote: boolean;
+  createdAt: number;
+}
+
+interface RequestQueryRow extends Omit<WireRequest, 'myVote'> {
+  myVote: number;
+}
+
+const REQUEST_SELECT = `
+  SELECT r.id, r.title, r.body, r.status, r.created_at AS createdAt, u.username AS author,
+         (SELECT COUNT(*) FROM request_votes v WHERE v.request_id = r.id) AS votes,
+         EXISTS (SELECT 1 FROM request_votes v WHERE v.request_id = r.id AND v.user_id = ?) AS myVote
+  FROM requests r JOIN users u ON u.id = r.user_id`;
+
+const requestToWire = (r: RequestQueryRow): WireRequest => ({ ...r, myVote: !!r.myVote });
+
+/** All requests, most-voted first (ties: oldest first). */
+export function getRequests(userId: string): WireRequest[] {
+  const rows = db.prepare(`${REQUEST_SELECT} ORDER BY votes DESC, r.created_at ASC`).all(userId) as RequestQueryRow[];
+  return rows.map(requestToWire);
+}
+
+function getRequest(userId: string, requestId: string): WireRequest | null {
+  const row = db.prepare(`${REQUEST_SELECT} WHERE r.id = ?`).get(userId, requestId) as RequestQueryRow | undefined;
+  return row ? requestToWire(row) : null;
+}
+
+/** Post a request. The author auto-upvotes their own request, so it starts at 1. */
+export const createRequest = db.transaction((userId: string, title: string, body: string): WireRequest => {
+  const id = randomUUID();
+  const now = Date.now();
+  db.prepare("INSERT INTO requests (id, user_id, title, body, status, created_at) VALUES (?, ?, ?, ?, 'open', ?)").run(id, userId, title, body, now);
+  db.prepare('INSERT INTO request_votes (request_id, user_id, created_at) VALUES (?, ?, ?)').run(id, userId, now);
+  return getRequest(userId, id)!;
+});
+
+/** Add or remove the user's upvote. Returns the refreshed request, or null if unknown. */
+export function setRequestVote(userId: string, requestId: string, vote: boolean): WireRequest | null {
+  if (!db.prepare('SELECT 1 FROM requests WHERE id = ?').get(requestId)) return null;
+  if (vote) {
+    db.prepare('INSERT INTO request_votes (request_id, user_id, created_at) VALUES (?, ?, ?) ON CONFLICT DO NOTHING').run(requestId, userId, Date.now());
+  } else {
+    db.prepare('DELETE FROM request_votes WHERE request_id = ? AND user_id = ?').run(requestId, userId);
+  }
+  return getRequest(userId, requestId);
+}

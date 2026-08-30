@@ -1,8 +1,11 @@
 /**
- * The "What's new" dialog content. Shown once per user after login: everyone who hasn't
- * dismissed the NEWEST version (releases[0]) sees the dialog, which renders every release
- * in this list (keep it to the last 1–2). Dismissing stores releases[0].version in
- * users.seen_version. To announce a release: unshift a new entry and trim old ones.
+ * The full release history, newest first. Two consumers:
+ * - The Changelog screen renders every release.
+ * - The "What's new" dialog shows once per user after login (everyone who hasn't dismissed
+ *   releases[0] sees it) and renders only the newest two releases. Dismissing stores
+ *   releases[0].version in users.seen_version.
+ * To announce a release: unshift a new entry (keep newest first — CURRENT_VERSION derives
+ * from releases[0]). Old entries stay: they're the changelog.
  */
 export interface ChangelogItem {
   title: string;
@@ -10,12 +13,28 @@ export interface ChangelogItem {
 }
 export interface ChangelogRelease {
   version: string;
+  date: string;
   items: ChangelogItem[];
 }
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: '2.9',
+    date: 'August 2026',
+    items: [
+      {
+        title: 'Ask for what you’re missing',
+        body: 'The new Requests tab is a little voting board: post a feature request, upvote the ones you want, and watch their status move from open to planned to done.',
+      },
+      {
+        title: 'A full changelog',
+        body: 'Every release, newest first, in the new Changelog tab — so "what changed?" no longer disappears after this dialog closes.',
+      },
+    ],
+  },
+  {
     version: '2.8',
+    date: 'August 2026',
     items: [
       {
         title: 'Språkkafé: practise for real',
@@ -29,6 +48,7 @@ export const CHANGELOG: ChangelogRelease[] = [
   },
   {
     version: '2.7',
+    date: 'August 2026',
     items: [
       {
         title: 'Spot new cards at a glance',
@@ -41,6 +61,56 @@ export const CHANGELOG: ChangelogRelease[] = [
       {
         title: 'Daily goals, made honest',
         body: 'Goals now show your exact progress ("3 of 12 reviews done"), and the new-cards goal targets your own daily limit instead of a fixed 20.',
+      },
+    ],
+  },
+  {
+    version: '2.6',
+    date: 'August 2026',
+    items: [
+      {
+        title: 'Edit cards anywhere',
+        body: 'Fix a typo the moment you spot it: every card in Browse has an Edit button, and the study card has a pencil in its corner. Edits never touch your review schedule.',
+      },
+      {
+        title: 'Sort Browse by trouble',
+        body: 'A new "Most missed" sort puts your hardest cards first, and cards you miss often carry a warning badge — hover it for your miss count.',
+      },
+    ],
+  },
+  {
+    version: '2.5',
+    date: 'August 2026',
+    items: [
+      {
+        title: 'Watch your progress grow',
+        body: 'Stats has a new "Mature cards over time" chart. See your long-term memory grow day by day, with 1W / 1M / 3M / 1Y views.',
+      },
+      {
+        title: 'A full-year calendar',
+        body: 'The activity calendar now shows the whole year at a glance, with month labels.',
+      },
+      {
+        title: 'Numbers on hover',
+        body: 'Hover any chart to see the exact numbers for that day.',
+      },
+    ],
+  },
+  {
+    version: '2.4',
+    date: 'August 2026',
+    items: [
+      {
+        title: 'Share decks with anyone',
+        body: 'Make a deck public with the padlock and it shows up under Community for everyone on this server — they get their own copy, and can pull new cards you add later.',
+      },
+      {
+        title: 'Fill-in-the-blank cards',
+        body: 'A new card type for learning words in context. Type a sentence with ___ where the answer goes.',
+      },
+      {
+        title: 'Focus drills for trouble words',
+        body: 'Stats now ranks the cards you miss most. Drill them off-schedule without touching your review dates.',
       },
     ],
   },

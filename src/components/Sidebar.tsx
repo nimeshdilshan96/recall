@@ -10,6 +10,8 @@ const NAV: { key: NavKey; label: string; screen: Screen }[] = [
   { key: 'league', label: 'League', screen: 'league' },
   { key: 'stats', label: 'Stats', screen: 'stats' },
   { key: 'browse', label: 'Browse', screen: 'browse' },
+  { key: 'changelog', label: 'Changelog', screen: 'changelog' },
+  { key: 'requests', label: 'Requests', screen: 'requests' },
 ];
 
 export function Sidebar() {

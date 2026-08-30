@@ -95,6 +95,24 @@ db.exec(`
     created_at INTEGER NOT NULL,
     PRIMARY KEY (event_id, user_id)
   );
+
+  -- Feature requests: a small voting board (Requests tab). Anyone can post and upvote;
+  -- status is curated by hand in SQL ('open' | 'under_review' | 'planned' | 'done') — no UI sets it.
+  CREATE TABLE IF NOT EXISTS requests (
+    id         TEXT PRIMARY KEY,
+    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    title      TEXT NOT NULL,
+    body       TEXT NOT NULL DEFAULT '',
+    status     TEXT NOT NULL DEFAULT 'open',
+    created_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS request_votes (
+    request_id TEXT NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+    user_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (request_id, user_id)
+  );
 `);
 
 // Migrations for databases created before these columns existed.
