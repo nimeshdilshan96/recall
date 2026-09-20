@@ -101,7 +101,8 @@ Three rolling **7-day** gauges on the Stats screen, computed in `repo.ts:getRete
   `state.newLimit`. Browse marks unstudied cards (`selectors.isNew`) with an accent "NEW" pill and
   has a "New first" sort.
 - **Card editing**: Browse rows + the Study card's corner pencil open `components/EditCardDialog.tsx`
-  (front/back/mnemonic/image → `PATCH /api/cards/:id`; FSRS state and review_log untouched).
+  (front/back/example/image → `PATCH /api/cards/:id`; FSRS state and review_log untouched). The old
+  `mnemonic` column was folded into `example` in v2.10 (`db.ts` migrates + drops it on startup).
   Modals must render via `createPortal` — screen wrappers keep a transform from their entry
   animation (breaks `position: fixed`), and the accent CSS vars live on the app root, so the
   dialog re-applies `accentVars(state.accent)` on its backdrop. Browse's "Most missed" sort +

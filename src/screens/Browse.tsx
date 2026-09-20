@@ -9,7 +9,7 @@ interface Row {
   id: string;
   front: string;
   back: string;
-  mnemonic: string;
+  example: string;
   image: string;
   deckId: string;
   deck: string;
@@ -34,7 +34,7 @@ export function Browse() {
   const allRows: Row[] = useMemo(
     () =>
       state.decks.flatMap((d) =>
-        d.cards.map((c) => ({ id: c.id, front: c.front, back: c.back, mnemonic: c.mnemonic ?? '', image: c.image ?? '', deckId: d.id, deck: d.name.split(' — ')[0], isNew: isNew(c) })),
+        d.cards.map((c) => ({ id: c.id, front: c.front, back: c.back, example: c.example ?? '', image: c.image ?? '', deckId: d.id, deck: d.name.split(' — ')[0], isNew: isNew(c) })),
       ),
     [state.decks],
   );

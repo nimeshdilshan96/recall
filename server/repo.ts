@@ -18,7 +18,6 @@ export interface WireCard {
   back: string;
   example: string | null;
   type: CardType;
-  mnemonic: string | null;
   image: string | null;
   createdAt: number;
   fsrs: { stability: number | null; difficulty: number | null; state: number; step: number | null; due: number; lastReview: number | null };
@@ -56,7 +55,6 @@ interface CardRow {
   back: string;
   example: string | null;
   type: string;
-  mnemonic: string | null;
   image: string | null;
   created_at: number;
   stability: number | null;
@@ -74,7 +72,6 @@ function rowToWire(r: CardRow): WireCard {
     back: r.back,
     example: r.example,
     type: (r.type as CardType) || 'basic',
-    mnemonic: r.mnemonic,
     image: r.image,
     createdAt: r.created_at,
     fsrs: { stability: r.stability, difficulty: r.difficulty, state: r.state, step: r.step, due: r.due, lastReview: r.last_review },
@@ -186,7 +183,6 @@ export interface NewCard {
   back: string;
   example?: string | null;
   type?: CardType;
-  mnemonic?: string | null;
   image?: string | null;
 }
 
@@ -197,16 +193,16 @@ export function addCard(userId: string, deckId: string, c: NewCard): WireCard | 
   const fresh = scheduler.newCard(new Date(now));
   const id = randomUUID();
   db.prepare(
-    'INSERT INTO cards (id, deck_id, front, back, example, type, mnemonic, image, created_at, stability, difficulty, state, step, due, last_review) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-  ).run(id, deckId, c.front, c.back, c.example ?? null, c.type ?? 'basic', c.mnemonic ?? null, c.image ?? null, now, fresh.stability, fresh.difficulty, fresh.state, fresh.step, fresh.due.getTime(), null);
+    'INSERT INTO cards (id, deck_id, front, back, example, type, image, created_at, stability, difficulty, state, step, due, last_review) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+  ).run(id, deckId, c.front, c.back, c.example ?? null, c.type ?? 'basic', c.image ?? null, now, fresh.stability, fresh.difficulty, fresh.state, fresh.step, fresh.due.getTime(), null);
   return rowToWire(db.prepare('SELECT * FROM cards WHERE id = ?').get(id) as CardRow);
 }
 
 /** Edit a card's note content. FSRS memory state and the review log are untouched. */
-export function updateCard(userId: string, cardId: string, c: { front: string; back: string; mnemonic: string | null; image: string | null }): WireCard | null {
+export function updateCard(userId: string, cardId: string, c: { front: string; back: string; example: string | null; image: string | null }): WireCard | null {
   const info = db
-    .prepare('UPDATE cards SET front = ?, back = ?, mnemonic = ?, image = ? WHERE id = ? AND deck_id IN (SELECT id FROM decks WHERE user_id = ?)')
-    .run(c.front, c.back, c.mnemonic, c.image, cardId, userId);
+    .prepare('UPDATE cards SET front = ?, back = ?, example = ?, image = ? WHERE id = ? AND deck_id IN (SELECT id FROM decks WHERE user_id = ?)')
+    .run(c.front, c.back, c.example, c.image, cardId, userId);
   if (info.changes === 0) return null;
   return rowToWire(db.prepare('SELECT * FROM cards WHERE id = ?').get(cardId) as CardRow);
 }
@@ -222,6 +218,12 @@ export function deleteCard(userId: string, cardId: string): boolean {
 /** Delete a whole deck; its cards + their review_log rows cascade. Returns true if it belonged to the user. */
 export function deleteDeck(userId: string, deckId: string): boolean {
   const info = db.prepare('DELETE FROM decks WHERE id = ? AND user_id = ?').run(deckId, userId);
+  return info.changes > 0;
+}
+
+/** Rename a deck. Returns true if the deck belonged to the user. */
+export function renameDeck(userId: string, deckId: string, name: string): boolean {
+  const info = db.prepare('UPDATE decks SET name = ? WHERE id = ? AND user_id = ?').run(name, deckId, userId);
   return info.changes > 0;
 }
 
@@ -292,13 +294,13 @@ function copyMissingCards(targetDeckId: string, sourceDeckId: string): WireCard[
   const missing = db.prepare(`SELECT o.* ${NEW_FROM_SOURCE} ORDER BY o.created_at`).all(sourceDeckId, targetDeckId) as (CardRow & { id: string })[];
   const now = Date.now();
   const insert = db.prepare(
-    'INSERT INTO cards (id, deck_id, front, back, example, type, mnemonic, image, created_at, stability, difficulty, state, step, due, last_review, source_card_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    'INSERT INTO cards (id, deck_id, front, back, example, type, image, created_at, stability, difficulty, state, step, due, last_review, source_card_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
   );
   const select = db.prepare('SELECT * FROM cards WHERE id = ?');
   return missing.map((c) => {
     const fresh = scheduler.newCard(new Date(now));
     const id = randomUUID();
-    insert.run(id, targetDeckId, c.front, c.back, c.example, c.type, c.mnemonic, c.image, now, fresh.stability, fresh.difficulty, fresh.state, fresh.step, fresh.due.getTime(), null, c.id);
+    insert.run(id, targetDeckId, c.front, c.back, c.example, c.type, c.image, now, fresh.stability, fresh.difficulty, fresh.state, fresh.step, fresh.due.getTime(), null, c.id);
     return rowToWire(select.get(id) as CardRow);
   });
 }

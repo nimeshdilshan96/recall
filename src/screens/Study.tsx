@@ -173,9 +173,6 @@ export function Study() {
               {card.example && (
                 <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed oklch(0.88 0 0)', fontSize: 15, fontStyle: 'italic', color: '#777777', lineHeight: 1.4 }}>{card.example}</div>
               )}
-              {card.mnemonic && (
-                <div style={{ marginTop: 14, background: 'var(--accent-tint)', borderRadius: 12, padding: '11px 16px', fontSize: 14, color: '#4b4b4b', lineHeight: 1.45 }}>{card.mnemonic}</div>
-              )}
               {card.image && (
                 <img src={card.image} alt="" style={{ marginTop: 14, maxWidth: '100%', maxHeight: 200, borderRadius: 12, objectFit: 'contain' }} />
               )}

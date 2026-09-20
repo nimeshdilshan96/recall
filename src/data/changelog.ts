@@ -19,6 +19,20 @@ export interface ChangelogRelease {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: '2.10',
+    date: 'September 2026',
+    items: [
+      {
+        title: 'Rename a deck',
+        body: 'On the Add tab, the selected deck now has a little pencil. Click it, type the new name, and click away (or press Enter) to save — Escape cancels. Copies other people already imported keep their own name; the Community catalog shows the new one.',
+      },
+      {
+        title: 'Fixed: example sentences couldn’t be edited',
+        body: 'The example under a card’s answer was read-only, and the "Mnemonic" box saved to a separate field. There’s now one "Example sentence" field, editable from Browse and the Study card’s pencil. Anything you had typed as a mnemonic was carried over.',
+      },
+    ],
+  },
+  {
     version: '2.9',
     date: 'August 2026',
     items: [

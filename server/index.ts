@@ -91,7 +91,7 @@ app.post('/api/decks', async (req, reply) => {
 app.post('/api/cards', async (req, reply) => {
   const id = requireUser(req, reply);
   if (!id) return;
-  const body = (req.body ?? {}) as { deckId?: string; front?: string; back?: string; example?: string; type?: string; mnemonic?: string; image?: string };
+  const body = (req.body ?? {}) as { deckId?: string; front?: string; back?: string; example?: string; type?: string; image?: string };
   const f = (body.front ?? '').trim();
   const b = (body.back ?? '').trim();
   if (!body.deckId || !f || !b) return reply.code(400).send({ error: 'deckId, front and back are required' });
@@ -100,7 +100,6 @@ app.post('/api/cards', async (req, reply) => {
     back: b,
     example: (body.example ?? '').trim() || null,
     type: body.type === 'cloze' ? 'cloze' : 'basic',
-    mnemonic: (body.mnemonic ?? '').trim() || null,
     image: (body.image ?? '').trim() || null,
   });
   if (!card) return reply.code(404).send({ error: 'Deck not found' });
@@ -111,11 +110,11 @@ app.patch('/api/cards/:id', async (req, reply) => {
   const id = requireUser(req, reply);
   if (!id) return;
   const cardId = (req.params as { id: string }).id;
-  const body = (req.body ?? {}) as { front?: string; back?: string; mnemonic?: string; image?: string };
+  const body = (req.body ?? {}) as { front?: string; back?: string; example?: string; image?: string };
   const f = (body.front ?? '').trim();
   const b = (body.back ?? '').trim();
   if (!f || !b) return reply.code(400).send({ error: 'front and back are required' });
-  const card = repo.updateCard(id, cardId, { front: f, back: b, mnemonic: (body.mnemonic ?? '').trim() || null, image: (body.image ?? '').trim() || null });
+  const card = repo.updateCard(id, cardId, { front: f, back: b, example: (body.example ?? '').trim() || null, image: (body.image ?? '').trim() || null });
   if (!card) return reply.code(404).send({ error: 'Card not found' });
   return { card };
 });
@@ -141,7 +140,13 @@ app.patch('/api/decks/:id', async (req, reply) => {
   const id = requireUser(req, reply);
   if (!id) return;
   const deckId = (req.params as { id: string }).id;
-  const { visibility } = (req.body ?? {}) as { visibility?: string };
+  const { visibility, name } = (req.body ?? {}) as { visibility?: string; name?: string };
+  if (name !== undefined) {
+    const n = name.trim();
+    if (!n) return reply.code(400).send({ error: 'Enter a deck name' });
+    if (!repo.renameDeck(id, deckId, n)) return reply.code(404).send({ error: 'Deck not found' });
+    return { ok: true };
+  }
   if (visibility !== 'private' && visibility !== 'public') return reply.code(400).send({ error: "visibility must be 'private' or 'public'" });
   if (!repo.setDeckVisibility(id, deckId, visibility)) return reply.code(404).send({ error: 'Deck not found' });
   return { ok: true };

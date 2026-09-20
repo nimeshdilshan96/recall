@@ -9,6 +9,18 @@ export function Add() {
   const canAdd = !!state.addDeckId && (cloze ? state.addSentence.trim().length > 0 : state.addFront.trim().length > 0 && state.addBack.trim().length > 0);
   const [creating, setCreating] = useState(false);
   const [newDeck, setNewDeck] = useState('');
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
+
+  const startRename = (id: string, name: string) => {
+    setRenamingId(id);
+    setDraft(name);
+  };
+  const commitRename = () => {
+    if (renamingId) actions.renameDeck(renamingId, draft);
+    setRenamingId(null);
+  };
+  const cancelRename = () => setRenamingId(null);
 
   const confirmNewDeck = () => {
     if (!newDeck.trim()) return;
@@ -56,11 +68,52 @@ export function Add() {
 
       <div style={label}>Deck</div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 22 }}>
-        {state.decks.map((d) => (
-          <button key={d.id} onClick={() => actions.setAddDeck(d.id)} style={chip(d.id === state.addDeckId)}>
-            {d.name.split(' — ')[0]}
-          </button>
-        ))}
+        {state.decks.map((d) => {
+          const selected = d.id === state.addDeckId;
+          if (renamingId === d.id) {
+            return (
+              <input
+                key={d.id}
+                autoFocus
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onFocus={(e) => e.target.select()}
+                onBlur={commitRename}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') commitRename();
+                  else if (e.key === 'Escape') cancelRename();
+                }}
+                aria-label="Deck name"
+                style={{ ...chip(true), cursor: 'text', color: '#4b4b4b', background: 'oklch(0.99 0 0)', outline: 'none', width: `${Math.max(draft.length, 8) + 3}ch`, maxWidth: '100%' }}
+              />
+            );
+          }
+          if (!selected) {
+            return (
+              <button key={d.id} onClick={() => actions.setAddDeck(d.id)} style={chip(false)}>
+                {d.name.split(' — ')[0]}
+              </button>
+            );
+          }
+          // Selected chip: label + pencil. Two buttons in one chip-shaped wrapper (a button can't nest a button).
+          return (
+            <div key={d.id} style={{ ...chip(true), cursor: 'default', display: 'flex', alignItems: 'center', gap: 6, padding: '0 8px 0 14px' }}>
+              <span style={{ padding: '8px 0' }}>{d.name.split(' — ')[0]}</span>
+              <button
+                className="tip"
+                data-tip="Rename deck"
+                aria-label="Rename deck"
+                onClick={() => startRename(d.id, d.name)}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 4, color: 'var(--accent)', opacity: 0.7, lineHeight: 0, display: 'flex' }}
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" style={{ stroke: 'currentColor', fill: 'none', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round' }}>
+                  <path d="M4 20h4L20 8l-4-4L4 16z" />
+                  <path d="M14 6l4 4" />
+                </svg>
+              </button>
+            </div>
+          );
+        })}
 
         {creating ? (
           <div style={{ display: 'flex', alignItems: 'center', border: '1px solid var(--accent)', borderRadius: 10, overflow: 'hidden', background: 'oklch(0.99 0 0)' }}>
@@ -117,8 +170,8 @@ export function Add() {
         </>
       )}
 
-      <div style={label}>Mnemonic{optional('optional, shown with the answer')}</div>
-      <textarea value={state.addMnemonic} onChange={(e) => actions.setAddMnemonic(autoNordic(e.target.value))} placeholder="A memory hook, e.g. sounds like…" style={{ ...textarea, minHeight: 64, fontSize: 15, marginBottom: 18 }} />
+      <div style={label}>Example sentence{optional('optional, shown with the answer')}</div>
+      <textarea value={state.addExample} onChange={(e) => actions.setAddExample(autoNordic(e.target.value))} placeholder="e.g. Hun sa at det var kaldt." style={{ ...textarea, minHeight: 64, fontSize: 15, marginBottom: 18 }} />
 
       <div style={label}>Image URL{optional('optional')}</div>
       <input

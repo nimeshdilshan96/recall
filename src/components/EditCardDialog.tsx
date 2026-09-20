@@ -4,7 +4,7 @@ import { useApp } from '../store.tsx';
 import { accentVars } from '../theme.ts';
 
 interface Props {
-  card: { id: string; front: string; back: string; mnemonic?: string | null; image?: string | null };
+  card: { id: string; front: string; back: string; example?: string | null; image?: string | null };
   deckLabel: string;
   onClose(): void;
 }
@@ -17,14 +17,14 @@ export function EditCardDialog({ card, deckLabel, onClose }: Props) {
   const { state, actions } = useApp();
   const [front, setFront] = useState(card.front);
   const [back, setBack] = useState(card.back);
-  const [mnemonic, setMnemonic] = useState(card.mnemonic ?? '');
+  const [example, setExample] = useState(card.example ?? '');
   const [image, setImage] = useState(card.image ?? '');
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
     if (saving || !front.trim() || !back.trim()) return;
     setSaving(true);
-    const ok = await actions.updateCard(card.id, { front: front.trim(), back: back.trim(), mnemonic: mnemonic.trim() || undefined, image: image.trim() || undefined });
+    const ok = await actions.updateCard(card.id, { front: front.trim(), back: back.trim(), example: example.trim() || undefined, image: image.trim() || undefined });
     setSaving(false);
     if (ok) onClose();
   };
@@ -70,9 +70,9 @@ export function EditCardDialog({ card, deckLabel, onClose }: Props) {
         <div style={label}>Back</div>
         <textarea value={back} onChange={(e) => setBack(e.target.value)} style={{ ...textarea, marginBottom: 18 }} />
         <div style={label}>
-          Mnemonic<span style={{ textTransform: 'none', fontWeight: 500, color: '#afafaf' }}> — optional, shown with the answer</span>
+          Example sentence<span style={{ textTransform: 'none', fontWeight: 500, color: '#afafaf' }}> — optional, shown with the answer</span>
         </div>
-        <textarea value={mnemonic} onChange={(e) => setMnemonic(e.target.value)} placeholder="A memory hook, e.g. sounds like…" style={{ ...textarea, minHeight: 64, fontSize: 15, marginBottom: 18 }} />
+        <textarea value={example} onChange={(e) => setExample(e.target.value)} placeholder="e.g. Hun sa at det var kaldt." style={{ ...textarea, minHeight: 64, fontSize: 15, marginBottom: 18 }} />
         <div style={label}>
           Image URL<span style={{ textTransform: 'none', fontWeight: 500, color: '#afafaf' }}> — optional</span>
         </div>

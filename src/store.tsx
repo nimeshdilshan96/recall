@@ -57,7 +57,6 @@ export interface AppState {
   addBack: string;
   addSentence: string; // cloze
   addExample: string;
-  addMnemonic: string;
   addImage: string;
   addedCount: number;
   addBusy: boolean;
@@ -111,7 +110,6 @@ export interface AppActions {
   setAddBack(v: string): void;
   setAddSentence(v: string): void;
   setAddExample(v: string): void;
-  setAddMnemonic(v: string): void;
   setAddImage(v: string): void;
   addCard(): void;
 
@@ -129,6 +127,7 @@ export interface AppActions {
   closeCommunityPreview(): void;
   importCommunityDeck(deckId: string): void;
   setDeckVisibility(deckId: string, visibility: DeckVisibility): void;
+  renameDeck(deckId: string, name: string): void;
   pullNewCards(deckId: string): void;
 
   setNewLimit(n: number): void;
@@ -136,7 +135,7 @@ export interface AppActions {
   setNewOrder(o: NewOrder): void;
 
   createDeck(name: string): void;
-  updateCard(cardId: string, fields: { front: string; back: string; mnemonic?: string; image?: string }): Promise<boolean>;
+  updateCard(cardId: string, fields: { front: string; back: string; example?: string; image?: string }): Promise<boolean>;
   deleteCard(cardId: string): void;
   deleteDeck(deckId: string): void;
 
@@ -215,7 +214,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addBack: '',
     addSentence: '',
     addExample: '',
-    addMnemonic: '',
     addImage: '',
     addedCount: 0,
     addBusy: false,
@@ -416,7 +414,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setAddBack: (v) => patch({ addBack: v }),
       setAddSentence: (v) => patch({ addSentence: v }),
       setAddExample: (v) => patch({ addExample: v }),
-      setAddMnemonic: (v) => patch({ addMnemonic: v }),
       setAddImage: (v) => patch({ addImage: v }),
       addCard: async () => {
         const s = stateRef.current;
@@ -444,7 +441,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             back,
             type: s.addType,
             example: s.addExample.trim() || undefined,
-            mnemonic: s.addMnemonic.trim() || undefined,
             image: s.addImage.trim() || undefined,
           });
           setState((s2) => ({
@@ -454,7 +450,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             addBack: '',
             addSentence: '',
             addExample: '',
-            addMnemonic: '',
             addImage: '',
             addedCount: s2.addedCount + 1,
             addBusy: false,
@@ -583,6 +578,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setState((s) => ({ ...s, decks: s.decks.map((d) => (d.id === deckId ? { ...d, visibility } : d)) })); // optimistic
         api.setDeckVisibility(deckId, visibility).then(
           () => showToast(visibility === 'public' ? 'Deck is now public' : 'Deck is now private'),
+          (e) => {
+            setState((s) => ({ ...s, decks: prev }));
+            showToast((e as Error).message);
+          },
+        );
+      },
+      renameDeck: (deckId, name) => {
+        const n = name.trim();
+        const prev = stateRef.current.decks;
+        if (!n || prev.find((d) => d.id === deckId)?.name === n) return;
+        setState((s) => ({ ...s, decks: s.decks.map((d) => (d.id === deckId ? { ...d, name: n } : d)) })); // optimistic
+        api.renameDeck(deckId, n).then(
+          () => showToast(`Renamed to ${n}`),
           (e) => {
             setState((s) => ({ ...s, decks: prev }));
             showToast((e as Error).message);

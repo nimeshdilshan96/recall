@@ -9,7 +9,6 @@ export interface RecallCard {
   back: string;
   example?: string | null;
   type: CardType;
-  mnemonic?: string | null;
   image?: string | null;
   fsrs: Card;
   /** When this card's note was created (for the "Added" stats graph). */

@@ -49,7 +49,7 @@ users (id, username, password_hash, xp, gems, created_at, new_limit, study_direc
 decks (id, user_id, name, color, pos,
        visibility,                  -- 'private' (default) | 'public' — public = listed in Community
        forked_from)                 -- source deck id if this deck was imported from Community
-cards (id, deck_id, front, back, example, type, mnemonic, image, created_at,
+cards (id, deck_id, front, back, example, type, image, created_at,
        stability, difficulty, state, step, due, last_review,   -- the FSRS record, per card
        source_card_id)              -- original card id if copied from a public deck
 review_log (id, card_id, user_id, rating, reviewed_at,
@@ -134,7 +134,7 @@ which floats unstudied cards to the top. Cards missed on ≥ 30% of reviews carr
 
 **Editing.** Every Browse row has an Edit button, and the Study card has a pencil in its top-right
 corner — both open the same card-style popup (`components/EditCardDialog.tsx`) for front / back /
-mnemonic / image URL, saved via `PATCH /api/cards/:id`. Edits change **note content only**: the
+example sentence / image URL, saved via `PATCH /api/cards/:id`. Edits change **note content only**: the
 FSRS memory state, the review log, and the study queue are untouched, so fixing a typo never
 reschedules a card. (For shared decks, content is copied at import/pull time — see
 [Sharing decks](#sharing-decks-community) — so edits don't propagate to existing copies.)

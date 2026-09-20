@@ -43,9 +43,8 @@ db.exec(`
     deck_id     TEXT NOT NULL REFERENCES decks(id) ON DELETE CASCADE,
     front       TEXT NOT NULL,
     back        TEXT NOT NULL,
-    example     TEXT,               -- optional example sentence / note, shown on reveal
+    example     TEXT,               -- optional example sentence, shown on reveal
     type        TEXT NOT NULL DEFAULT 'basic',  -- 'basic' | 'cloze'
-    mnemonic    TEXT,               -- optional memory hook, shown with the answer
     image       TEXT,               -- optional image URL, shown with the answer
     created_at  INTEGER NOT NULL,
     -- FSRS memory state (null until first review)
@@ -116,14 +115,26 @@ db.exec(`
 `);
 
 // Migrations for databases created before these columns existed.
-function ensureColumn(table: string, column: string, ddl: string) {
+function hasColumn(table: string, column: string): boolean {
   const cols = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
-  if (!cols.some((c) => c.name === column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+  return cols.some((c) => c.name === column);
+}
+function ensureColumn(table: string, column: string, ddl: string) {
+  if (!hasColumn(table, column)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
 }
 ensureColumn('cards', 'example', 'example TEXT');
 ensureColumn('cards', 'type', "type TEXT NOT NULL DEFAULT 'basic'");
-ensureColumn('cards', 'mnemonic', 'mnemonic TEXT');
 ensureColumn('cards', 'image', 'image TEXT');
+// v2.10: the separate "mnemonic" note was folded into `example` (one sentence field, editable in
+// the app). Carry over any hooks users typed, then drop the column. Runs once; no-op afterwards.
+if (hasColumn('cards', 'mnemonic')) {
+  db.transaction(() => {
+    db.exec(
+      "UPDATE cards SET example = CASE WHEN example IS NULL OR example = '' THEN mnemonic ELSE example || ' ' || mnemonic END WHERE mnemonic IS NOT NULL AND mnemonic <> ''",
+    );
+    db.exec('ALTER TABLE cards DROP COLUMN mnemonic');
+  })();
+}
 ensureColumn('users', 'new_limit', 'new_limit INTEGER NOT NULL DEFAULT 20');
 ensureColumn('users', 'study_direction', "study_direction TEXT NOT NULL DEFAULT 'front'");
 ensureColumn('users', 'new_order', "new_order TEXT NOT NULL DEFAULT 'oldest'"); // 'oldest' | 'newest' | 'random'

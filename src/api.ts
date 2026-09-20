@@ -22,7 +22,6 @@ interface WireCard {
   back: string;
   example: string | null;
   type: CardType;
-  mnemonic: string | null;
   image: string | null;
   createdAt: number;
   fsrs: { stability: number | null; difficulty: number | null; state: number; step: number | null; due: number; lastReview: number | null };
@@ -114,7 +113,7 @@ function reviveCard(w: WireCard): RecallCard {
     due: new Date(w.fsrs.due),
     lastReview: w.fsrs.lastReview === null ? null : new Date(w.fsrs.lastReview),
   };
-  return { id: w.id, front: w.front, back: w.back, example: w.example, type: w.type ?? 'basic', mnemonic: w.mnemonic, image: w.image, createdAt: new Date(w.createdAt), fsrs };
+  return { id: w.id, front: w.front, back: w.back, example: w.example, type: w.type ?? 'basic', image: w.image, createdAt: new Date(w.createdAt), fsrs };
 }
 
 function reviveDeck(w: WireDeck): Deck {
@@ -140,7 +139,7 @@ export const api = {
   logout: () => req<{ ok: true }>('POST', '/api/auth/logout'),
 
   decks: async (): Promise<Deck[]> => (await req<{ decks: WireDeck[] }>('GET', '/api/decks')).decks.map(reviveDeck),
-  addCard: async (deckId: string, card: { front: string; back: string; example?: string; type?: CardType; mnemonic?: string; image?: string }): Promise<RecallCard> =>
+  addCard: async (deckId: string, card: { front: string; back: string; example?: string; type?: CardType; image?: string }): Promise<RecallCard> =>
     reviveCard((await req<{ card: WireCard }>('POST', '/api/cards', { deckId, ...card })).card),
   answer: async (cardId: string, rating: Rating): Promise<{ card: RecallCard; user: PublicUser }> => {
     const r = await req<{ card: WireCard; user: PublicUser }>('POST', `/api/cards/${cardId}/answer`, { rating });
@@ -150,12 +149,13 @@ export const api = {
   createDeck: async (name: string): Promise<Deck> => reviveDeck((await req<{ deck: WireDeck }>('POST', '/api/decks', { name })).deck),
   updateSettings: async (opts: { newLimit?: number; studyDirection?: StudyDirection; newOrder?: NewOrder; seenVersion?: string }): Promise<PublicUser> =>
     (await req<{ user: PublicUser }>('PATCH', '/api/settings', opts)).user,
-  updateCard: async (cardId: string, fields: { front: string; back: string; mnemonic?: string; image?: string }): Promise<RecallCard> =>
+  updateCard: async (cardId: string, fields: { front: string; back: string; example?: string; image?: string }): Promise<RecallCard> =>
     reviveCard((await req<{ card: WireCard }>('PATCH', `/api/cards/${cardId}`, fields)).card),
   deleteCard: (cardId: string) => req<{ ok: true }>('DELETE', `/api/cards/${cardId}`),
   deleteDeck: (deckId: string) => req<{ ok: true }>('DELETE', `/api/decks/${deckId}`),
 
   setDeckVisibility: (deckId: string, visibility: DeckVisibility) => req<{ ok: true }>('PATCH', `/api/decks/${deckId}`, { visibility }),
+  renameDeck: (deckId: string, name: string) => req<{ ok: true }>('PATCH', `/api/decks/${deckId}`, { name }),
   community: async (): Promise<CommunityDeck[]> => (await req<{ decks: CommunityDeck[] }>('GET', '/api/community')).decks,
   communityDeck: async (deckId: string): Promise<CommunityDeckDetail> => (await req<{ deck: CommunityDeckDetail }>('GET', `/api/community/${deckId}`)).deck,
   importDeck: async (deckId: string): Promise<Deck> => reviveDeck((await req<{ deck: WireDeck }>('POST', `/api/community/${deckId}/import`)).deck),
