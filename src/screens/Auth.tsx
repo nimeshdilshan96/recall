@@ -10,14 +10,14 @@ export function Auth() {
     background: 'oklch(0.98 0 0)',
     borderRadius: 14,
     padding: '14px 16px',
-    fontSize: 15,
+    fontSize: 16, // ≥16px: iOS Safari zooms the page on focus for smaller input text
     fontWeight: 600,
     color: '#4b4b4b',
   };
 
   return (
-    <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28, overflowY: 'auto' }}>
-      <div style={{ width: '100%', maxWidth: 360, textAlign: 'center', animation: 'rvFloat 0.4s ease both' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 28, overflowY: 'auto' }}>
+      <div style={{ width: '100%', maxWidth: 360, textAlign: 'center', margin: 'auto 0', flexShrink: 0, animation: 'rvFloat 0.4s ease both' }}>
         <div style={{ width: 58, height: 58, borderRadius: 17, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: '0 5px 0 var(--accent-deep)' }}>
           <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 34, color: '#fff' }}>R</span>
         </div>
@@ -29,7 +29,7 @@ export function Auth() {
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 11, textAlign: 'left' }}>
-          <input value={state.authUser} onChange={(e) => actions.setAuthUser(e.target.value)} placeholder="Username" style={input} onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')} onBlur={(e) => (e.currentTarget.style.borderColor = 'oklch(0.9 0 0)')} />
+          <input autoFocus value={state.authUser} onChange={(e) => actions.setAuthUser(e.target.value)} placeholder="Username" style={input} onFocus={(e) => (e.currentTarget.style.borderColor = 'var(--accent)')} onBlur={(e) => (e.currentTarget.style.borderColor = 'oklch(0.9 0 0)')} />
           <input
             type="password"
             value={state.authPass}

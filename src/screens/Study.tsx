@@ -3,12 +3,15 @@ import { useApp } from '../store.tsx';
 import { Rating, State, formatInterval, studyDayStart } from '../fsrs/recall-scheduler.ts';
 import { autoNordic, checkTyped, clozeParts } from '../util/answer.ts';
 import { EditCardDialog } from '../components/EditCardDialog.tsx';
+import { useIsMobile } from '../hooks/useIsMobile.ts';
+import { MobileMenu } from '../components/MobileMenu.tsx';
 
 const TYPE_ANSWERS = true;
 
 export function Study() {
   const { state, actions, scheduler, currentCard } = useApp();
   const card = currentCard();
+  const isMobile = useIsMobile();
   const typeRef = useRef<HTMLInputElement>(null);
   const [editing, setEditing] = useState(false);
   const now = useMemo(() => new Date(), [state.qIndex, state.studyDeckId]);
@@ -53,6 +56,14 @@ export function Study() {
   const promptText = reversed ? card.back : card.front;
   const answerText = isCloze ? card.back : reversed ? card.front : card.back;
   const tag = isCloze ? 'Fill in the blank' : isNewCard ? 'New card' : 'Review';
+  // Prompt font size. Short items (single words, the usual case) stay big; on mobile long
+  // sentences step down so they don't wrap into a seven-line wall at 42px on a 390px screen.
+  const fitText = (base: number, len: number) => {
+    const scale = !isMobile || len <= 30 ? 1 : len <= 70 ? 0.72 : len <= 120 ? 0.58 : 0.5;
+    return Math.max(18, Math.round(base * scale));
+  };
+  const promptSize = fitText(isCloze ? (state.revealed ? 30 : 32) : state.revealed ? 28 : 42, isCloze ? card.front.length : promptText.length);
+  const answerSize = fitText(26, answerText.length);
 
   const rest = state.queue.slice(state.qIndex);
   let newLeft = 0;
@@ -94,9 +105,10 @@ export function Study() {
   );
 
   const gradeBtn = (label: string, iv: string, bg: string, color: string, onClick: () => void) => (
-    <button onClick={onClick} style={{ flex: 1, minWidth: 110, border: 'none', cursor: 'pointer', padding: '13px 8px', borderRadius: 13, background: bg, color, fontWeight: 700 }}>
-      <div style={{ fontSize: 14 }}>{label}</div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.8, marginTop: 2 }}>{iv}</div>
+    // Mobile: all four on one row (minWidth 0 so they can share ~83px each at 390px); desktop wraps at 110px.
+    <button onClick={onClick} style={{ flex: 1, minWidth: isMobile ? 0 : 110, border: 'none', cursor: 'pointer', padding: isMobile ? '12px 4px' : '13px 8px', borderRadius: 13, background: bg, color, fontWeight: 700 }}>
+      <div style={{ fontSize: isMobile ? 13.5 : 14 }}>{label}</div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, opacity: 0.8, marginTop: 2, whiteSpace: 'nowrap' }}>{iv}</div>
     </button>
   );
 
@@ -121,10 +133,14 @@ export function Study() {
           <span style={{ color: 'oklch(0.55 0.11 250)' }}>{newLeft}</span>
           <span style={{ color: 'oklch(0.62 0.12 150)' }}>{dueLeft}</span>
         </div>
+        {isMobile && <MobileMenu />}
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 'var(--study-area-pad) var(--pad)', minHeight: 0, overflowY: 'auto' }}>
         <div style={{ position: 'relative', width: '100%', maxWidth: 560, margin: 'auto 0', flexShrink: 0, background: 'oklch(0.995 0 0)', border: '1px solid oklch(0.9 0 0)', borderRadius: 22, boxShadow: '0 18px 44px -28px oklch(0.3 0 0 / 0.5)', overflow: 'hidden' }}>
+          {/* Mobile hides the pencil + card-type tag to give the prompt the room (cards are still
+              editable from Browse). */}
+          {!isMobile && (
           <button
             className="tip tip-left"
             data-tip="Edit this card"
@@ -136,9 +152,10 @@ export function Study() {
               <path d="M14 6l4 4" />
             </svg>
           </button>
+          )}
           <div style={{ padding: state.revealed ? '20px 36px 14px' : 'var(--study-card-pad) 36px', textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.12em', color: 'var(--accent)', textTransform: 'uppercase' }}>{tag}</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: isCloze ? (state.revealed ? 30 : 32) : state.revealed ? 28 : 42, fontWeight: 500, color: '#4b4b4b', marginTop: 12, lineHeight: 1.3, transition: 'font-size 0.2s' }}>{promptNode}</div>
+            {!isMobile && <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.12em', color: 'var(--accent)', textTransform: 'uppercase' }}>{tag}</div>}
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: promptSize, fontWeight: 500, color: '#4b4b4b', marginTop: isMobile ? 0 : 12, lineHeight: 1.3, transition: 'font-size 0.2s' }}>{promptNode}</div>
             {!state.revealed && TYPE_ANSWERS && (
               <input
                 ref={typeRef}
@@ -169,7 +186,7 @@ export function Study() {
                 </div>
               )}
               <div style={{ fontFamily: 'var(--font-mono)', fontSize: 10.5, letterSpacing: '0.12em', color: '#afafaf', textTransform: 'uppercase' }}>Answer</div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 500, color: '#4b4b4b', marginTop: 8, lineHeight: 1.3 }}>{answerText}</div>
+              <div style={{ fontFamily: 'var(--font-display)', fontSize: answerSize, fontWeight: 500, color: '#4b4b4b', marginTop: 8, lineHeight: 1.3 }}>{answerText}</div>
               {card.example && (
                 <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px dashed oklch(0.88 0 0)', fontSize: 15, fontStyle: 'italic', color: '#777777', lineHeight: 1.4 }}>{card.example}</div>
               )}
@@ -186,7 +203,7 @@ export function Study() {
           <div style={{ textAlign: 'center', fontSize: 12, color: '#afafaf', marginBottom: 12 }}>Practice session — grades won't change your review schedule</div>
         )}
         {state.revealed ? (
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', maxWidth: 560, margin: '0 auto' }}>
+          <div style={{ display: 'flex', gap: isMobile ? 8 : 10, flexWrap: isMobile ? 'nowrap' : 'wrap', maxWidth: 560, margin: '0 auto' }}>
             {gradeBtn('Again', buttons.again, '#ffe5e5', '#ea2b2b', () => grade(Rating.Again))}
             {gradeBtn('Hard', buttons.hard, '#ffeccc', '#d97e00', () => grade(Rating.Hard))}
             {gradeBtn('Good', buttons.good, '#e1f7cf', '#46a302', () => grade(Rating.Good))}

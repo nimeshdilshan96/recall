@@ -135,12 +135,19 @@ input:focus {
   --study-card-pad: 44px;  /* card vertical padding (unrevealed) */
   --study-input-gap: 26px; /* gap above the type-answer input */
 }
+/* html.kb-open is set by useVisualViewport when the mobile keyboard is up — iOS doesn't shrink the
+   layout viewport for the keyboard, so the max-height media query alone never fires there. */
 @media (max-height: 580px) {
   :root {
     --study-area-pad: 8px;
     --study-card-pad: 18px;
     --study-input-gap: 12px;
   }
+}
+html.kb-open {
+  --study-area-pad: 8px;
+  --study-card-pad: 18px;
+  --study-input-gap: 12px;
 }
 
 /* Streak flame + gem icons (icons.tsx): hover glow/flicker and facet cycling.

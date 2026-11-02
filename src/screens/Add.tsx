@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useApp } from '../store.tsx';
 import { autoNordic } from '../util/answer.ts';
 import type { CardType } from '../data/types.ts';
@@ -10,6 +10,12 @@ export function Add() {
   const [creating, setCreating] = useState(false);
   const [newDeck, setNewDeck] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
+  // Put the cursor in the prompt field (Front, or Sentence for cloze) when the screen opens,
+  // when the card type switches, and after each add — so the next card can be typed straight away.
+  const promptRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    promptRef.current?.focus();
+  }, [cloze, state.addedCount]);
   const [draft, setDraft] = useState('');
 
   const startRename = (id: string, name: string) => {
@@ -155,6 +161,7 @@ export function Add() {
         <>
           <div style={label}>Sentence</div>
           <textarea
+            ref={promptRef}
             value={state.addSentence}
             onChange={(e) => actions.setAddSentence(autoNordic(e.target.value))}
             placeholder="Type the full sentence — wrap the answer in [brackets], e.g. Bussen kommer [snart]"
@@ -164,21 +171,21 @@ export function Add() {
       ) : (
         <>
           <div style={label}>Front</div>
-          <textarea value={state.addFront} onChange={(e) => actions.setAddFront(autoNordic(e.target.value))} placeholder="e.g. 木" style={{ ...textarea, marginBottom: 18 }} />
+          <textarea ref={promptRef} value={state.addFront} onChange={(e) => actions.setAddFront(autoNordic(e.target.value))} placeholder="e.g. 木" style={{ ...textarea, marginBottom: 18 }} />
           <div style={label}>Back</div>
           <textarea value={state.addBack} onChange={(e) => actions.setAddBack(autoNordic(e.target.value))} placeholder="e.g. tree (ki)" style={{ ...textarea, marginBottom: 18 }} />
         </>
       )}
 
       <div style={label}>Example sentence{optional('optional, shown with the answer')}</div>
-      <textarea value={state.addExample} onChange={(e) => actions.setAddExample(autoNordic(e.target.value))} placeholder="e.g. Hun sa at det var kaldt." style={{ ...textarea, minHeight: 64, fontSize: 15, marginBottom: 18 }} />
+      <textarea value={state.addExample} onChange={(e) => actions.setAddExample(autoNordic(e.target.value))} placeholder="e.g. Hun sa at det var kaldt." style={{ ...textarea, minHeight: 64, fontSize: 16, marginBottom: 18 }} />
 
       <div style={label}>Image URL{optional('optional')}</div>
       <input
         value={state.addImage}
         onChange={(e) => actions.setAddImage(e.target.value)}
         placeholder="https://…"
-        style={{ width: '100%', border: '1px solid oklch(0.88 0 0)', borderRadius: 13, padding: '13px 16px', fontSize: 15, background: 'oklch(0.99 0 0)', color: '#4b4b4b', marginBottom: 22 }}
+        style={{ width: '100%', border: '1px solid oklch(0.88 0 0)', borderRadius: 13, padding: '13px 16px', fontSize: 16, background: 'oklch(0.99 0 0)', color: '#4b4b4b', marginBottom: 22 }}
       />
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>

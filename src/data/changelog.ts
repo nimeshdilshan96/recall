@@ -19,6 +19,28 @@ export interface ChangelogRelease {
 
 export const CHANGELOG: ChangelogRelease[] = [
   {
+    version: '2.11',
+    date: 'November 2026',
+    items: [
+      {
+        title: 'Phone keyboard no longer hides the buttons',
+        body: 'When the keyboard opens, the screen now shrinks to the space above it — so Show answer, Log in and Add card stay in view instead of sliding under the keys. No more closing the keyboard to tap a button.',
+      },
+      {
+        title: 'Menu moved to the top on phones',
+        body: 'The bottom tab bar is gone. Tap the ☰ button at the top right — next to your avatar, or next to the progress bar while studying — to switch between Decks, Add, Community, Språkkafé, League, Stats and Browse.',
+      },
+      {
+        title: 'A leaner study card on phones',
+        body: 'Long sentences scale down to fit instead of wrapping into a wall of text, the answer does the same, Again / Hard / Good / Easy sit on one row, and the "New card" label and edit pencil are hidden to make room. Cards are still editable from Browse.',
+      },
+      {
+        title: 'The cursor is where you need it',
+        body: 'The Front field is focused as soon as you open Add (and again after each card you add), and the login screen starts in the Username field. On phones, input text is at least 16px so Safari no longer zooms the page when you tap a field.',
+      },
+    ],
+  },
+  {
     version: '2.10',
     date: 'September 2026',
     items: [

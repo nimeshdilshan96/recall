@@ -2,6 +2,7 @@ import { useApp } from '../store.tsx';
 import { streakFrom } from '../selectors.ts';
 import { FlameIcon, GemIcon, LogoutIcon, NavIcon } from './icons.tsx';
 import { useIsMobile } from '../hooks/useIsMobile.ts';
+import { MobileMenu } from './MobileMenu.tsx';
 
 export function StatsBar() {
   const { state, actions } = useApp();
@@ -61,6 +62,7 @@ export function StatsBar() {
           </div>
         )}
       </div>
+      {isMobile && <MobileMenu />}
     </div>
   );
 }
