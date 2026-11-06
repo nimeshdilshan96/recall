@@ -133,7 +133,22 @@ export function Study() {
           <span style={{ color: 'oklch(0.55 0.11 250)' }}>{newLeft}</span>
           <span style={{ color: 'oklch(0.62 0.12 150)' }}>{dueLeft}</span>
         </div>
-        {isMobile && <MobileMenu />}
+        {isMobile && (
+          <>
+            {/* The card's corner pencil is hidden on mobile to save space — edit from the header instead. */}
+            <button
+              aria-label="Edit this card"
+              onClick={() => setEditing(true)}
+              style={{ border: 'none', background: 'oklch(0.93 0 0)', cursor: 'pointer', width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0, color: '#777777', flexShrink: 0 }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" style={{ stroke: 'currentColor', fill: 'none', strokeWidth: 2.2, strokeLinecap: 'round', strokeLinejoin: 'round', display: 'block' }}>
+                <path d="M4 20h4L20 8l-4-4L4 16z" />
+                <path d="M14 6l4 4" />
+              </svg>
+            </button>
+            <MobileMenu />
+          </>
+        )}
       </div>
 
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 'var(--study-area-pad) var(--pad)', minHeight: 0, overflowY: 'auto' }}>

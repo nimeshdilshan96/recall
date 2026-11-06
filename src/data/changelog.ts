@@ -32,7 +32,7 @@ export const CHANGELOG: ChangelogRelease[] = [
       },
       {
         title: 'A leaner study card on phones',
-        body: 'Long sentences scale down to fit instead of wrapping into a wall of text, the answer does the same, Again / Hard / Good / Easy sit on one row, and the "New card" label and edit pencil are hidden to make room. Cards are still editable from Browse.',
+        body: 'Long sentences scale down to fit instead of wrapping into a wall of text, the answer does the same, Again / Hard / Good / Easy sit on one row, and the "New card" label is gone to make room. The edit pencil moved up into the header row, next to the menu.',
       },
       {
         title: 'The cursor is where you need it',
